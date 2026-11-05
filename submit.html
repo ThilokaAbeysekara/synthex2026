@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Submit Research Idea | SYNTHEX 2026</title>
+  <meta name="description" content="Submit your innovative research idea for the SYNTHEX 2026 Pitch Competition.">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💡</text></svg>">
+  
+  <!-- Fonts: Space Grotesk & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="form-page-body">
+
+  <!-- Ambient Glowing Background Canvas -->
+  <canvas id="ambient-canvas"></canvas>
+
+  <!-- Atmospheric Volumetric Glow Aurora -->
+  <div class="aurora-glow-container" aria-hidden="true">
+    <div class="aurora-glow-blob aurora-right"></div>
+    <div class="aurora-glow-blob aurora-center"></div>
+  </div>
+
+  <!-- Navigation Bar -->
+  <header class="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="brand-logo">
+        <span class="logo-text">SYNTHEX &nbsp; <span class="logo-accent">2026</span></span>
+      </a>
+
+      <!-- Right Navigation Actions -->
+      <div class="nav-actions">
+        <!-- Submissions Open Live Indicator -->
+        <span class="status-pill">
+          <span class="pulse-dot"></span>
+          <span>Submissions Open</span>
+        </span>
+
+        <!-- Return to Homepage Button -->
+        <a href="index.html" class="nav-back-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m15 18-6-6 6-6"/>
+          </svg>
+          <span>Back to Home</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content: Form Filling Page -->
+  <main class="form-page-main">
+    <section id="submit-section" class="form-section form-standalone-section">
+      <div class="section-container">
+        
+        <!-- Form Header -->
+        <div class="form-header-box">
+          <div class="form-pill">
+            <span class="dot-indicator"></span>
+            IDEA SUBMISSION PORTAL
+          </div>
+          <h1 class="form-main-title">Submit Your Research Idea</h1>
+          <p class="form-sub-desc">
+            Complete the form below to enter the SYNTHEX 2026 Pitch Competition.
+          </p>
+
+          <!-- Guideline PDF Button -->
+          <a href="Guideline.pdf" target="_blank" rel="noopener" class="guideline-btn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="12" y1="18" x2="12" y2="12"/>
+              <line x1="9" y1="15" x2="12" y2="18"/>
+              <line x1="15" y1="15" x2="12" y2="18"/>
+            </svg>
+            <span>View Submission Guidelines</span>
+          </a>
+
+          <!-- Guideline Reminder -->
+          <p class="guideline-reminder">
+            Please read the <span class="guideline-inline-link">Submission Guidelines</span> before submitting your idea.
+          </p>
+
+        </div>
+
+        <!-- Glassmorphism Form Card -->
+        <div class="form-card-wrapper">
+          <div class="form-glow-backdrop"></div>
+          
+          <!-- Submissions Closed Notice Card (Activated when CONFIG.submissionsOpen = false) -->
+          <div id="submissions-closed-card" class="submissions-closed-card" style="display: none;">
+            <div class="closed-icon-badge">
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+            </div>
+            <h2 class="closed-title">Submissions Are Now Closed</h2>
+            <p class="closed-description">
+              The submission phase for SYNTHEX 2026 has officially concluded. Thank you to all innovators and teams who submitted their research concepts.
+            </p>
+            <div class="closed-info-grid">
+              <div class="closed-info-item">
+                <span class="info-label">Current Stage</span>
+                <span class="info-value">Evaluation & Review by Selection Committee</span>
+              </div>
+              <div class="closed-info-item">
+                <span class="info-label">Announcements</span>
+                <span class="info-value">Shortlisted participants will be notified via email</span>
+              </div>
+            </div>
+            <div class="closed-actions">
+              <a href="index.html" class="closed-home-btn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                  <polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+                <span>Return to Home</span>
+              </a>
+            </div>
+          </div>
+
+          <form id="idea-form" class="modern-form" novalidate>
+            
+            <!-- Step 1: Select Submission Type (Individual vs Group) -->
+            <div class="form-group" id="group-submissionType">
+              <label class="form-label">
+                Select Your Submission Type <span class="required-star">*</span>
+              </label>
+              
+              <div class="type-toggle-container" role="radiogroup" aria-label="Select Your Submission Type">
+                <button type="button" class="type-toggle-btn active" data-type="individual" id="type-individual-btn">
+                  <div class="type-btn-header">
+                    <span class="type-icon">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                      </svg>
+                    </span>
+                    <span class="type-radio-indicator"></span>
+                  </div>
+                  <div class="type-content">
+                    <span class="type-title">Individual Submission</span>
+                  </div>
+                </button>
+
+                <button type="button" class="type-toggle-btn" data-type="group" id="type-group-btn">
+                  <div class="type-btn-header">
+                    <span class="type-icon">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                      </svg>
+                    </span>
+                    <span class="type-badge">Max 6</span>
+                    <span class="type-radio-indicator"></span>
+                  </div>
+                  <div class="type-content">
+                    <span class="type-title">Group Submission</span>
+                  </div>
+                </button>
+              </div>
+
+              <input type="hidden" id="submissionType" name="submissionType" value="individual">
+            </div>
+
+            <!-- Step 2: Select Your Batch (Shared) -->
+            <div class="form-group" id="group-batch">
+              <label class="form-label">
+                Select Your Batch <span class="required-star">*</span>
+              </label>
+              
+              <!-- Interactive Batch Selection Pills -->
+              <div class="batch-pills-container" role="radiogroup" aria-label="Select Your Batch">
+                <button type="button" class="batch-pill" data-batch="21/22">
+                  <span class="batch-radio"></span>
+                  <span class="batch-text">21/22</span>
+                </button>
+                <button type="button" class="batch-pill" data-batch="22/23">
+                  <span class="batch-radio"></span>
+                  <span class="batch-text">22/23</span>
+                </button>
+                <button type="button" class="batch-pill" data-batch="23/24">
+                  <span class="batch-radio"></span>
+                  <span class="batch-text">23/24</span>
+                </button>
+                <button type="button" class="batch-pill" data-batch="24/25">
+                  <span class="batch-radio"></span>
+                  <span class="batch-text">24/25</span>
+                </button>
+              </div>
+
+              <!-- Hidden Native Select (synced for form data) -->
+              <select id="batch" name="batch" class="hidden-select" required>
+                <option value="" disabled selected>Select your batch</option>
+                <option value="20/21">20/21</option>
+                <option value="21/22">21/22</option>
+                <option value="22/23">22/23</option>
+                <option value="23/24">23/24</option>
+              </select>
+            </div>
+
+            <!-- ==========================================
+                 FIELD 3: PARTICIPANT INFORMATION
+                 ========================================== -->
+            <div class="participant-section">
+              <div class="branch-divider">
+                <span class="branch-pill-badge" id="participant-badge">Individual Participant Details</span>
+              </div>
+
+              <!-- Option A: Individual Participant Panel -->
+              <div id="participant-individual-panel" class="participant-panel active">
+                <div class="individual-grid">
+                  <!-- Registration Number -->
+                  <div class="form-group" id="group-regNo">
+                    <label for="regNo" class="form-label">
+                      Registration No <span class="required-star">*</span>
+                    </label>
+                    <div class="input-wrapper">
+                      <span class="input-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 7h10"/><path d="M7 12h10"/><path d="M7 17h6"/>
+                        </svg>
+                      </span>
+                      <input 
+                        type="text" 
+                        id="regNo" 
+                        name="regNo" 
+                        class="form-control" 
+                        placeholder="e.g. 22APP1234" 
+                        autocomplete="off"
+                      >
+                      <span class="validation-badge"></span>
+                    </div>
+                  </div>
+
+                  <!-- Full Name -->
+                  <div class="form-group" id="group-fullName">
+                    <label for="fullName" class="form-label">
+                      Full Name <span class="required-star">*</span>
+                    </label>
+                    <div class="input-wrapper">
+                      <span class="input-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                        </svg>
+                      </span>
+                      <input 
+                        type="text" 
+                        id="fullName" 
+                        name="fullName" 
+                        class="form-control" 
+                        placeholder="e.g. A.B.C.D. Perera" 
+                        autocomplete="name"
+                      >
+                      <span class="validation-badge"></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Option B: Group Dynamic Members Table Panel -->
+              <div id="participant-group-panel" class="participant-panel" style="display: none;">
+                <div class="form-group" id="group-groupMembers">
+                  <div class="members-header-bar">
+                    <div class="members-title-group">
+                      <label class="form-label">
+                        Registration Numbers with Names <span class="required-star">*</span>
+                      </label>
+                      <span class="members-sublabel">At least 2 members required. You can add up to 6 members.</span>
+                    </div>
+                    <div class="members-count-pill" id="members-count-pill">
+                      <span class="count-num" id="members-count">2</span> / 6 Members
+                    </div>
+                  </div>
+
+                  <div class="members-table-container">
+                    <table class="members-table" id="members-table">
+                      <thead>
+                        <tr>
+                          <th class="col-index">#</th>
+                          <th class="col-reg">Registration No <span class="required-star">*</span></th>
+                          <th class="col-name">Full Name <span class="required-star">*</span></th>
+                          <th class="col-action"></th>
+                        </tr>
+                      </thead>
+                      <tbody id="members-table-body">
+                        <!-- Row 1: Member 1 (Lead) -->
+                        <tr class="member-row" data-member-index="1">
+                          <td class="col-index">
+                            <span class="member-badge lead-badge">1 (Lead)</span>
+                          </td>
+                          <td class="col-reg">
+                            <input 
+                              type="text" 
+                              class="form-control member-input member-reg" 
+                              placeholder="e.g. 22APP1234" 
+                              autocomplete="off"
+                            >
+                          </td>
+                          <td class="col-name">
+                            <input 
+                              type="text" 
+                              class="form-control member-input member-name" 
+                              placeholder="e.g. A.B.C.D. Perera" 
+                              autocomplete="off"
+                            >
+                          </td>
+                          <td class="col-action">
+                            <!-- Row 1 cannot be removed (Lead) -->
+                          </td>
+                        </tr>
+
+                        <!-- Row 2: Member 2 -->
+                        <tr class="member-row" data-member-index="2">
+                          <td class="col-index">
+                            <span class="member-badge">2</span>
+                          </td>
+                          <td class="col-reg">
+                            <input 
+                              type="text" 
+                              class="form-control member-input member-reg" 
+                              placeholder="e.g. 22APP1235" 
+                              autocomplete="off"
+                            >
+                          </td>
+                          <td class="col-name">
+                            <input 
+                              type="text" 
+                              class="form-control member-input member-name" 
+                              placeholder="e.g. E.F.G.H. Silva" 
+                              autocomplete="off"
+                            >
+                          </td>
+                          <td class="col-action">
+                            <!-- Row 2 cannot be removed (Min 2) -->
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <!-- Add Member Action Control -->
+                  <div class="members-footer-bar">
+                    <button type="button" id="add-member-btn" class="add-member-btn">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 5v14M5 12h14"/>
+                      </svg>
+                      <span>Add Member</span>
+                    </button>
+
+                    <div id="max-members-alert" class="max-members-alert" style="display: none;">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                      </svg>
+                      <span>Maximum limit of 6 members reached</span>
+                    </div>
+                  </div>
+
+                  <!-- Hidden field for compiled payload -->
+                  <input type="hidden" id="groupMembers" name="groupMembers">
+                </div>
+              </div>
+            </div>
+
+            <!-- ==========================================
+                 UNIFIED CORE PROPOSAL FIELDS (Shared)
+                 ========================================== -->
+
+            <!-- Field 4: Topic of Your Idea -->
+            <div class="form-group" id="group-topic">
+              <label for="topic" class="form-label">
+                Topic of Your Idea <span class="required-star">*</span>
+              </label>
+              <div class="input-wrapper">
+                <span class="input-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/>
+                    <path d="M9 18h6"/><path d="M10 22h4"/>
+                  </svg>
+                </span>
+                <input 
+                  type="text" 
+                  id="topic" 
+                  name="topic" 
+                  class="form-control" 
+                  placeholder="e.g. Autonomous Edge-AI for Disaster Rescue" 
+                  required
+                  autocomplete="off"
+                >
+                <span class="validation-badge"></span>
+              </div>
+            </div>
+
+            <!-- Field 5: Upload Your Concept Paper -->
+            <div class="form-group" id="group-conceptPaper">
+              <label class="form-label">
+                Upload Your Concept Paper <span class="required-star">*</span>
+              </label>
+              <div class="file-upload-wrapper" id="file-upload-wrapper">
+                <input
+                  type="file"
+                  id="conceptPaper"
+                  name="conceptPaper"
+                  class="file-upload-input"
+                  accept=".pdf,.doc,.docx"
+                  required
+                >
+                <label for="conceptPaper" class="file-upload-label">
+                  <div class="file-upload-icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                      <polyline points="17 8 12 3 7 8"/>
+                      <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                  </div>
+                  <div class="file-upload-text">
+                    <span class="file-upload-title" id="file-upload-title">Click to upload your concept paper</span>
+                    <span class="file-upload-hint">PDF, DOC, or DOCX &nbsp;&bull;&nbsp; Max 10MB</span>
+                  </div>
+                </label>
+                <div class="file-selected-info" id="file-selected-info" style="display:none;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                  </svg>
+                  <span id="file-selected-name"></span>
+                  <button type="button" class="file-remove-btn" id="file-remove-btn" aria-label="Remove file">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Concept Paper Template Download Link -->
+              <div class="template-download-box">
+                <a href="Research_Concept_Paper.docx" download="Research_Concept_Paper.docx" class="template-download-link">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                  <span>Click here to download concept paper template</span>
+                </a>
+              </div>
+            </div>
+
+            <!-- Field 6: Email -->
+            <div class="form-group" id="group-email">
+              <label for="email" class="form-label">
+                Email <span class="required-star">*</span>
+                <span class="email-subhint" id="email-subhint"></span>
+              </label>
+              <div class="input-wrapper">
+                <span class="input-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                  </svg>
+                </span>
+                <input 
+                  type="email" 
+                  id="email" 
+                  name="email" 
+                  class="form-control" 
+                  placeholder="e.g. perera@gmail.com" 
+                  required
+                  autocomplete="email"
+                >
+                <span class="validation-badge"></span>
+              </div>
+            </div>
+
+            <!-- Field 7: Contact Number (Optional) -->
+            <div class="form-group" id="group-phone">
+              <label for="phone" class="form-label">
+                Contact Number <span class="optional-label">(Optional)</span>
+              </label>
+              <div class="input-wrapper">
+                <span class="input-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                  </svg>
+                </span>
+                <input 
+                  type="tel" 
+                  id="phone" 
+                  name="phone" 
+                  class="form-control" 
+                  placeholder="e.g. 07X XXX XXXX" 
+                  autocomplete="tel"
+                >
+                <span class="validation-badge"></span>
+              </div>
+            </div>
+
+            <!-- Submission Status Alert -->
+            <div id="form-alert" class="form-alert" style="display: none;"></div>
+
+            <!-- Submit Button & Action Bar -->
+            <div class="form-action-bar">
+              <button type="submit" id="submit-btn" class="submit-action-btn">
+                <span class="btn-spinner" id="btn-spinner" style="display: none;"></span>
+                <span class="btn-label" id="btn-label">Submit Research Idea</span>
+                <svg class="submit-arrow-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M5 12h14"></path>
+                  <path d="m12 5 7 7-7 7"></path>
+                </svg>
+              </button>
+            </div>
+
+          </form>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <!-- Success Celebration Modal -->
+  <div id="success-modal" class="modal-backdrop" style="display: none;">
+    <div class="modal-card">
+      <div class="success-icon-animated">
+        <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+          <circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none"/>
+          <path class="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+        </svg>
+      </div>
+
+      <span class="success-badge">SUBMISSION CONFIRMED</span>
+      <h3 class="modal-title">Idea Successfully Submitted!</h3>
+      <p class="modal-desc">
+        Your research proposal has been recorded and safely synchronized with the official SYNTHEX 2026 Google Spreadsheet.
+      </p>
+
+      <!-- Submission Summary Box -->
+      <div class="receipt-box">
+        <div class="receipt-row">
+          <span class="receipt-key">Submission Type:</span>
+          <span class="receipt-val" id="receipt-type">Individual</span>
+        </div>
+        <div class="receipt-row">
+          <span class="receipt-key">Topic:</span>
+          <span class="receipt-val" id="receipt-topic">-</span>
+        </div>
+        <div class="receipt-row">
+          <span class="receipt-key">Presenter / Team:</span>
+          <span class="receipt-val" id="receipt-name">-</span>
+        </div>
+        <div class="receipt-row">
+          <span class="receipt-key">Batch:</span>
+          <span class="receipt-val" id="receipt-batch">-</span>
+        </div>
+        <div class="receipt-row">
+          <span class="receipt-key">Email:</span>
+          <span class="receipt-val" id="receipt-email">-</span>
+        </div>
+        <div class="receipt-row">
+          <span class="receipt-key">Reference ID:</span>
+          <span class="receipt-val" id="receipt-id">-</span>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button id="close-modal-btn" class="modal-primary-btn">Submit Another Idea</button>
+        <a href="index.html" class="modal-secondary-btn">Return to Home</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Google Spreadsheet Integration Config Modal -->
+  <div id="config-modal" class="modal-backdrop" style="display: none;">
+    <div class="modal-card config-card">
+      <div class="config-modal-header">
+        <div class="config-title-group">
+          <div class="config-icon">📊</div>
+          <div>
+            <h3>Google Spreadsheet Sync Settings</h3>
+            <p>Configure where submitted ideas are stored</p>
+          </div>
+        </div>
+        <button id="close-config-btn" class="close-x-btn" aria-label="Close">&times;</button>
+      </div>
+
+      <div class="config-content">
+        <!-- Active Status -->
+        <div class="integration-status-card">
+          <div class="status-indicator-live">
+            <span class="live-dot"></span>
+            <div>
+              <strong>Live Mode: Connected to SYNTHEX Google Form & Sheet</strong>
+              <p>Form ID: <code>17yshc-_WReK7hkJFw-Rja6fRgYTfuDDETcJBow-sPzI</code></p>
+            </div>
+          </div>
+          <span class="connected-badge">ACTIVE</span>
+        </div>
+
+        <div class="config-tabs">
+          <p class="config-info-text">
+            Every submission sent through this site is instantly submitted into your Google Form's response database and its linked Google Spreadsheet!
+          </p>
+
+          <div class="guide-box">
+            <h4>How to view your responses in Google Sheets:</h4>
+            <ol>
+              <li>Open your Google Form at <a href="https://docs.google.com/forms/d/17yshc-_WReK7hkJFw-Rja6fRgYTfuDDETcJBow-sPzI/edit" target="_blank" rel="noopener">Google Forms Edit</a></li>
+              <li>Click on the <strong>Responses</strong> tab at the top</li>
+              <li>Click the green <strong>"Link to Sheets"</strong> icon</li>
+              <li>All entries submitted from this website will appear in real time in your Google Spreadsheet!</li>
+            </ol>
+          </div>
+
+          <!-- Custom Webhook URL Option (for Standalone Google Sheet via Apps Script) -->
+          <div class="advanced-section">
+            <label for="custom-script-url" class="advanced-label">
+              <span>Optional: Custom Google Apps Script Web App URL</span>
+              <span class="tag-opt">Advanced</span>
+            </label>
+            <input 
+              type="url" 
+              id="custom-script-url" 
+              class="form-control code-input" 
+              placeholder="https://script.google.com/macros/s/.../exec"
+            >
+            <p class="input-hint">Leave blank to use the pre-configured default Google Form/Sheet sync, or paste your Apps Script URL here.</p>
+          </div>
+
+          <!-- Local Backup Data Storage -->
+          <div class="local-backup-bar">
+            <span>Local Stored Submissions: <strong id="backup-count">0</strong></span>
+            <button id="export-csv-btn" class="export-btn" type="button">Download CSV Backup</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions config-actions">
+        <button id="save-config-btn" class="modal-primary-btn">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-left">
+        <div class="brand-logo footer-logo">
+          <span class="logo-text">SYNTHEX &nbsp;<span class="logo-accent">2026</span></span>
+        </div>
+        <p class="footer-tagline">Society of Technological Studies</p>
+        <p class="footer-tagline">Department of Physical Sciences and Technology</p>
+        <p class="footer-tagline">Faculty of Applied Sciences</p>
+        <p class="footer-tagline">Sabaragamuwa University of Sri Lanka</p>
+      </div>
+
+      <div class="footer-right">
+        <div class="footer-logos-group">
+          <img src="STS.png" alt="STS Logo" class="footer-sts-logo">
+          <img src="SUSL.png" alt="SUSL Logo" class="footer-sts-logo">
+        </div>
+        <p class="copyright">© 2026 SYNTHEX. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Confetti Canvas for Celebration -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- App Script -->
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SYNTHEX 2026 | Pitch Competition</title>
+  <meta name="description" content="SYNTHEX 2026 Pitch Competition - Submit your innovative research ideas and transform vision into reality.">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💡</text></svg>">
+  
+  <!-- Fonts: Space Grotesk & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Ambient Glowing Background Canvas -->
+  <canvas id="ambient-canvas"></canvas>
+
+  <!-- Atmospheric Volumetric Glow Aurora (Matching Reference Design) -->
+  <div class="aurora-glow-container" aria-hidden="true">
+    <div class="aurora-glow-blob aurora-right"></div>
+    <div class="aurora-glow-blob aurora-center"></div>
+  </div>
+
+  <!-- Navigation Bar -->
+  <header class="navbar">
+    <div class="nav-container">
+      <a href="#" class="brand-logo">
+        <span class="logo-text">SYNTHEX &nbsp; <span class="logo-accent">2026</span></span>
+      </a>
+
+      <!-- Right Navigation Actions -->
+      <div class="nav-actions">
+        <!-- Submissions Open Live Indicator -->
+        <span class="status-pill">
+          <span class="pulse-dot"></span>
+          <span>Submissions Open</span>
+        </span>
+
+        <!-- Primary CTA Pill Button -->
+        <a href="submit.html" class="nav-cta-btn">Submit Idea</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <main>
+    <section class="hero-section">
+      <div class="hero-wrapper">
+        
+        <!-- Two-Column Asymmetric Grid Matching Reference Design -->
+        <div class="hero-grid">
+          
+          <!-- Left Column: Typography & Action Buttons -->
+          <div class="hero-left">
+            <!-- Modern Category Badge -->
+            <div class="hero-badge">
+              <span class="sparkle">✦</span>
+              <span>Future Research & Innovation Showcase</span>
+              <span class="sparkle">✦</span>
+            </div>
+
+            <!-- SYNTHEX: Large Capital Title with Electric Green Gradient (Zero White) -->
+            <h1 class="hero-title" data-text="SYNTHEX">SYNTHEX</h1>
+
+            <!-- Pitch Competition: Smaller Font Directly Below SYNTHEX -->
+            <div class="hero-subtitle-container">
+              <p class="hero-subtitle">Pitch Competition</p>
+            </div>
+
+            <!-- Description Tagline -->
+            <p class="hero-description">
+              Welcome to SYNTHEX 2026 — a platform for creativity, innovation, and problem-solving. Share your ideas, showcase your potential, and turn your vision into reality. Your next big idea starts here!
+            </p>
+
+            <!-- CTA Action Buttons -->
+            <div class="hero-actions">
+              <a href="submit.html" id="hero-submit-btn" class="cta-primary-btn">
+                <span class="btn-text">Submit Your Idea</span>
+                <svg class="btn-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M5 12h14"></path>
+                  <path d="m12 5 7 7-7 7"></path>
+                </svg>
+              </a>
+
+              <a href="about.html" class="cta-secondary-btn hero-about-btn">
+                <span>About Us</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m9 18 6-6-6-6"/>
+                </svg>
+              </a>
+              
+              <a href="#highlights-section" class="cta-tertiary-btn">
+                <span>Explore Tracks</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m6 9 6 6 6-6"/>
+                </svg>
+              </a>
+            </div>
+          </div>
+
+          <!-- Right Column: Animated Cybernetic Idea Bulb (Electric Green & Navy Theme) -->
+          <div class="hero-right" id="hero-idea-bulb">
+            <div class="idea-bulb-wrapper" id="idea-bulb-trigger" title="Click to Pitch Your Research Idea">
+              
+              <!-- Volumetric Breathing Aurora Glow behind Bulb -->
+              <div class="bulb-glow-aura"></div>
+              
+              <!-- Radiating Cyber Corona Ray Beams -->
+              <div class="bulb-rays-container">
+                <div class="bulb-ray ray-1"></div>
+                <div class="bulb-ray ray-2"></div>
+                <div class="bulb-ray ray-3"></div>
+                <div class="bulb-ray ray-4"></div>
+              </div>
+
+              <!-- Vector Animated Cybernetic Idea Bulb SVG -->
+              <svg class="idea-bulb-svg" viewBox="0 0 440 440" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <!-- Cyber Green Gradient -->
+                  <linearGradient id="bulbNeonGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#00FF87"/>
+                    <stop offset="50%" stop-color="#10F996"/>
+                    <stop offset="100%" stop-color="#00F5D4"/>
+                  </linearGradient>
+
+                  <!-- Dark Obsidian Glass Bulb Fill -->
+                  <linearGradient id="bulbGlassGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#03162a" stop-opacity="0.88"/>
+                    <stop offset="60%" stop-color="#05283f" stop-opacity="0.82"/>
+                    <stop offset="100%" stop-color="#03192c" stop-opacity="0.94"/>
+                  </linearGradient>
+
+                  <!-- Radial Core Glow -->
+                  <radialGradient id="bulbCoreRadial" cx="50%" cy="42%" r="50%">
+                    <stop offset="0%" stop-color="#00FF87" stop-opacity="0.45"/>
+                    <stop offset="45%" stop-color="#00F5D4" stop-opacity="0.2"/>
+                    <stop offset="100%" stop-color="#020a16" stop-opacity="0"/>
+                  </radialGradient>
+
+                  <!-- Orbit Stroke Gradient 1 -->
+                  <linearGradient id="orbitGrad1" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#00FF87" stop-opacity="0.1"/>
+                    <stop offset="50%" stop-color="#00F5D4" stop-opacity="0.75"/>
+                    <stop offset="100%" stop-color="#00FF87" stop-opacity="0.1"/>
+                  </linearGradient>
+
+                  <!-- Orbit Stroke Gradient 2 -->
+                  <linearGradient id="orbitGrad2" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#00F5D4" stop-opacity="0.15"/>
+                    <stop offset="50%" stop-color="#10F996" stop-opacity="0.8"/>
+                    <stop offset="100%" stop-color="#00F5D4" stop-opacity="0.15"/>
+                  </linearGradient>
+
+                  <!-- Neon Glow Filters -->
+                  <filter id="bulbGlowFilter" x="-30%" y="-30%" width="160%" height="160%">
+                    <feGaussianBlur stdDeviation="7" result="blur"/>
+                    <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+                  </filter>
+
+                  <filter id="bulbIntenseFilter" x="-40%" y="-40%" width="180%" height="180%">
+                    <feGaussianBlur stdDeviation="14" result="blur1"/>
+                    <feGaussianBlur stdDeviation="5" result="blur2"/>
+                    <feMerge>
+                      <feMergeNode in="blur1"/>
+                      <feMergeNode in="blur2"/>
+                      <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                  </filter>
+                </defs>
+
+                <!-- 1. Holographic Orbital Energy Rings Behind Bulb -->
+                <g class="orbit-group-back">
+                  <ellipse cx="220" cy="165" rx="155" ry="48" transform="rotate(-22 220 165)" stroke="url(#orbitGrad1)" stroke-width="1.6" stroke-dasharray="6 8" class="orbit-path-1"/>
+                  <ellipse cx="220" cy="165" rx="142" ry="42" transform="rotate(28 220 165)" stroke="url(#orbitGrad2)" stroke-width="1.4" stroke-dasharray="5 7" class="orbit-path-2"/>
+                </g>
+
+                <!-- 2. Ambient Bulb Glass Silhouette -->
+                <!-- Outer Bulb Contour -->
+                <path d="M 188 285 C 172 258, 125 215, 125 155 C 125 102, 167 60, 220 60 C 273 60, 315 102, 315 155 C 315 215, 268 258, 252 285 Z" fill="url(#bulbGlassGrad)" stroke="url(#bulbNeonGrad)" stroke-width="2.5" class="bulb-shell" filter="url(#bulbGlowFilter)"/>
+
+                <!-- Inner Radial Volumetric Fill -->
+                <path d="M 188 285 C 172 258, 125 215, 125 155 C 125 102, 167 60, 220 60 C 273 60, 315 102, 315 155 C 315 215, 268 258, 252 285 Z" fill="url(#bulbCoreRadial)"/>
+
+                <!-- Glass Specular Reflection Arcs -->
+                <path d="M 148 135 C 150 95, 180 75, 210 72" stroke="#00F5D4" stroke-width="3" stroke-linecap="round" opacity="0.65"/>
+                <path d="M 142 165 C 142 152, 145 142, 150 135" stroke="#00FF87" stroke-width="2" stroke-linecap="round" opacity="0.45"/>
+
+                <!-- 3. High-Tech Idea Filament (Neural Brain Circuits & Lightning Core) -->
+                <g class="filament-network">
+                  <!-- Base Connectors -->
+                  <line x1="205" y1="285" x2="205" y2="235" stroke="#00FF87" stroke-width="2" opacity="0.7"/>
+                  <line x1="235" y1="285" x2="235" y2="235" stroke="#00FF87" stroke-width="2" opacity="0.7"/>
+
+                  <!-- Main Support Arcs -->
+                  <path d="M 205 235 L 220 215 L 235 235" stroke="url(#bulbNeonGrad)" stroke-width="2" fill="none"/>
+
+                  <!-- Cyber Neural Circuit Traces (Animated Energy Pulses) -->
+                  <!-- Left Hemisphere -->
+                  <path d="M 220 215 L 195 195 L 170 195 L 158 165 L 175 140 L 205 155" stroke="#00FF87" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none" class="circuit-line circuit-1"/>
+                  <path d="M 195 195 L 195 170 L 180 155" stroke="#00F5D4" stroke-width="1.8" stroke-linecap="round" fill="none" class="circuit-line circuit-2"/>
+                  <path d="M 170 195 L 165 210 L 150 210" stroke="#10F996" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+
+                  <!-- Right Hemisphere -->
+                  <path d="M 220 215 L 245 195 L 270 195 L 282 165 L 265 140 L 235 155" stroke="#00FF87" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none" class="circuit-line circuit-1"/>
+                  <path d="M 245 195 L 245 170 L 260 155" stroke="#00F5D4" stroke-width="1.8" stroke-linecap="round" fill="none" class="circuit-line circuit-2"/>
+                  <path d="M 270 195 L 275 210 L 290 210" stroke="#10F996" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+
+                  <!-- Center Crown Circuits -->
+                  <path d="M 220 185 L 208 145 L 220 120 L 232 145 Z" stroke="url(#bulbNeonGrad)" stroke-width="2" fill="none" class="circuit-line"/>
+
+                  <!-- Glowing Neural Node Junctions -->
+                  <circle cx="220" cy="215" r="4" fill="#00FF87" filter="url(#bulbGlowFilter)"/>
+                  <circle cx="170" cy="195" r="3.5" fill="#00F5D4"/>
+                  <circle cx="270" cy="195" r="3.5" fill="#00F5D4"/>
+                  <circle cx="158" cy="165" r="3" fill="#00FF87"/>
+                  <circle cx="282" cy="165" r="3" fill="#00FF87"/>
+                  <circle cx="175" cy="140" r="3.5" fill="#10F996"/>
+                  <circle cx="265" cy="140" r="3.5" fill="#10F996"/>
+                  <circle cx="205" cy="155" r="3" fill="#00FF87"/>
+                  <circle cx="235" cy="155" r="3" fill="#00FF87"/>
+                  <circle cx="220" cy="120" r="4.5" fill="#00FF87" filter="url(#bulbGlowFilter)"/>
+
+                  <!-- Pulsating Central Lightning Core (Heart of Innovation) -->
+                  <polygon points="220,102 211,135 224,135 215,168 233,124 221,124" fill="url(#bulbNeonGrad)" filter="url(#bulbIntenseFilter)" class="lightning-spark"/>
+                </g>
+
+                <!-- 4. Metallic Screw Base & Contacts -->
+                <g class="bulb-base">
+                  <!-- Stepped Metal Collar -->
+                  <path d="M 188 285 L 252 285 L 248 322 L 192 322 Z" fill="#03162a" stroke="#00FF87" stroke-width="1.5"/>
+                  
+                  <!-- Thread Ridge 1 -->
+                  <path d="M 186 293 Q 220 300 254 293" stroke="url(#bulbNeonGrad)" stroke-width="3" stroke-linecap="round"/>
+                  <!-- Thread Ridge 2 -->
+                  <path d="M 188 305 Q 220 312 252 305" stroke="url(#bulbNeonGrad)" stroke-width="3" stroke-linecap="round"/>
+                  <!-- Thread Ridge 3 -->
+                  <path d="M 191 317 Q 220 324 249 317" stroke="url(#bulbNeonGrad)" stroke-width="3" stroke-linecap="round"/>
+
+                  <!-- Bottom Electrical Contact -->
+                  <path d="M 205 324 C 205 338, 235 338, 235 324 Z" fill="#020e1c" stroke="#00F5D4" stroke-width="1.5"/>
+                  <circle cx="220" cy="334" r="3" fill="#00FF87" filter="url(#bulbGlowFilter)"/>
+                </g>
+
+                <!-- 5. Orbital Energy Packets (Traveling along Holographic Gyroscope) -->
+                <g class="orbit-particles">
+                  <!-- Packet 1: Counter-Clockwise Orbit -->
+                  <circle cx="340" cy="130" r="4.5" fill="#00FF87" filter="url(#bulbGlowFilter)">
+                    <animateMotion path="M -120 35 C 0 -25, 60 10, 30 50 C -10 90, -180 50, -120 35 Z" dur="4.5s" repeatCount="indefinite"/>
+                  </circle>
+                  <!-- Packet 2: Clockwise Orbit -->
+                  <circle cx="100" cy="180" r="4" fill="#00F5D4" filter="url(#bulbGlowFilter)">
+                    <animateMotion path="M 120 -35 C 180 15, 60 70, 0 40 C -70 10, 60 -70, 120 -35 Z" dur="3.8s" repeatCount="indefinite"/>
+                  </circle>
+                  <!-- Packet 3: Top Crown Node -->
+                  <circle cx="220" cy="40" r="3.5" fill="#10F996" filter="url(#bulbGlowFilter)">
+                    <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite"/>
+                    <animate attributeName="r" values="3;5;3" dur="2s" repeatCount="indefinite"/>
+                  </circle>
+                </g>
+              </svg>
+
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Highlights Section -->
+    <section id="highlights-section" class="highlights-section">
+      <div class="section-container">
+        <div class="section-header">
+          <span class="section-tag">COMPETITION PILLARS</span>
+          <h2 class="section-title">Why Submit Your Idea to SYNTHEX?</h2>
+          <p class="section-desc">Have an innovative idea? SYNTHEX 2026 is your opportunity to share your thinking, explore possibilities, and showcase your creativity.</p>
+        </div>
+
+        <div class="cards-grid">
+          <div class="feature-card">
+            <div class="card-icon-box">💡</div>
+            <h3>Share Your Innovation</h3>
+            <p>Have an idea that could solve a real-world problem? Share your concept and explore new possibilities through technology.</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="card-icon-box">🎯</div>
+            <h3>Turn Ideas into Solutions</h3>
+            <p>Transform your technical knowledge and creative thinking into practical solutions that address real challenges.</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="card-icon-box">🚀</div>
+            <h3>Showcase Your Potential</h3>
+            <p>Present your ideas, demonstrate your problem-solving skills and take the first step towards bringing your vision to life.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-left">
+        <div class="brand-logo footer-logo">
+          <span class="logo-text">SYNTHEX &nbsp;<span class="logo-accent">2026</span></span>
+        </div>
+        <p class="footer-tagline">Society of Technological Studies</p>
+        <p class="footer-tagline">Department of Physical Sciences and Technology</p>
+        <p class="footer-tagline">Faculty of Applied Sciences</p>
+        <p class="footer-tagline">Sabaragamuwa University of Sri Lanka</p>
+      </div>
+      
+      <div class="footer-right">
+        <div class="footer-logos-group">
+          <img src="STS.png" alt="STS Logo" class="footer-sts-logo">
+          <img src="SUSL.png" alt="SUSL Logo" class="footer-sts-logo">
+        </div>
+        <p class="copyright">© 2026 SYNTHEX. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Confetti Canvas for Celebration -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- App Script -->
+  <script src="app.js"></script>
+</body>
+</html>

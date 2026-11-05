@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About Us | SYNTHEX 2026 & STS</title>
+  <meta name="description" content="Learn about SYNTHEX 2026 Pitch Competition and the Society of Technological Studies (STS), Sabaragamuwa University of Sri Lanka.">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💡</text></svg>">
+  
+  <!-- Fonts: Space Grotesk & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="about-page-body">
+
+  <!-- Ambient Glowing Background Canvas -->
+  <canvas id="ambient-canvas"></canvas>
+
+  <!-- Atmospheric Volumetric Glow Aurora -->
+  <div class="aurora-glow-container" aria-hidden="true">
+    <div class="aurora-glow-blob aurora-right"></div>
+    <div class="aurora-glow-blob aurora-center"></div>
+  </div>
+
+  <!-- Navigation Bar -->
+  <header class="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="brand-logo">
+        <span class="logo-text">SYNTHEX &nbsp; <span class="logo-accent">2026</span></span>
+      </a>
+
+      <!-- Right Navigation Actions -->
+      <div class="nav-actions">
+        <!-- Submissions Open Live Indicator -->
+        <span class="status-pill">
+          <span class="pulse-dot"></span>
+          <span>Submissions Open</span>
+        </span>
+
+        <!-- Return to Homepage Button -->
+        <a href="index.html" class="nav-back-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m15 18-6-6 6-6"/>
+          </svg>
+          <span>Home</span>
+        </a>
+
+        <!-- Submit Idea CTA -->
+        <a href="submit.html" class="nav-cta-btn">Submit Idea</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content: About Page -->
+  <main class="about-page-main">
+
+    <!-- Header Section -->
+    <section class="about-header-section">
+      <div class="about-header-box">
+        <h1 class="about-main-title">About Us</h1>
+      </div>
+    </section>
+
+    <!-- Part 1: What is SYNTHEX 2026? -->
+    <section class="about-block-section" id="what-is-synthex">
+      <div class="about-block-card">
+        <div class="about-grid">
+          
+          <!-- Content Left -->
+          <div class="about-content">
+            <span class="about-tag-badge">PITCH COMPETITION</span>
+            <h2 class="about-heading">What is SYNTHEX 2026?</h2>
+            
+            <div class="about-text">
+              <p>
+                <strong>SYNTHEX 2026</strong> is a technology-focused pitch competition designed to inspire innovation, creativity, and critical thinking among undergraduates. The competition provides a platform for students to present their ideas, explore emerging technologies, and propose solutions to real-world challenges.
+              <p>
+                By encouraging technical exploration and entrepreneurial thinking, SYNTHEX aims to transform creative concepts into meaningful possibilities and empower the next generation of innovators to shape a better future through technology.
+              </p>
+              </p>
+            </div>
+
+            <!-- Call to Action -->
+            <div style="margin-top: 0.75rem;">
+              <a href="submit.html" class="cta-primary-btn">
+                <span class="btn-text">Submit Your Idea</span>
+                <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M5 12h14"></path>
+                  <path d="m12 5 7 7-7 7"></path>
+                </svg>
+              </a>
+            </div>
+
+          </div>
+
+          <!-- Image Right: Futuristic Green Innovation Core -->
+          <div class="about-visual-column">
+            <div class="about-image-card">
+              <img src="synthex-innovation.png" alt="SYNTHEX 2026 Technological Innovation Core" class="about-image" loading="lazy">
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- Part 2: What is STS? -->
+    <section class="about-block-section" id="what-is-sts">
+      <div class="about-block-card">
+        <div class="about-grid">
+          
+          <!-- Content Left -->
+          <div class="about-content">
+            <span class="about-tag-badge">STUDENT ACADEMIC SOCIETY</span>
+            <h2 class="about-heading">What is STS?</h2>
+            
+            <div class="about-text">
+              <p>
+                The <strong>Society of Technological Studies (STS)</strong> is a student society affiliated with the <strong>Department of Physical Sciences and Technology</strong>, Faculty of Applied Sciences, <strong>Sabaragamuwa University of Sri Lanka</strong>. STS aims to foster technological awareness, knowledge sharing, and innovation among undergraduates.
+              </p>
+              <p>
+                Through academic initiatives, collaborative activities, and technology-focused events, the society encourages students to develop their skills, explore emerging fields, and connect their academic knowledge with practical applications.
+              </p>
+            </div>
+          </div>
+
+          <!-- Image Right: Official STS Logo with Glowing Backdrop -->
+          <div class="about-visual-column">
+            <div class="about-sts-logo-card">
+              <div class="sts-card-glow"></div>
+              <img src="STS.png" alt="Society of Technological Studies Logo" class="about-sts-logo" loading="lazy">
+              <p class="sts-caption">Society of Technological Studies</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- Part 3: Contact Us -->
+    <section class="about-block-section" id="contact-us">
+      <div class="about-block-card">
+        <div class="about-content" style="max-width: 100%;">
+          <span class="about-tag-badge">GET IN TOUCH</span>
+          <h2 class="about-heading">Contact Us</h2>
+          
+          <div class="about-text">
+            <p>
+              Have questions regarding the SYNTHEX 2026 Pitch Competition, guidelines, or the submission process? Reach out to our organizing team:
+            </p>
+          </div>
+
+          <!-- Contact Cards Grid -->
+          <div class="contact-cards-grid">
+            
+            <!-- Email -->
+            <a href="mailto:synthex2026@gmail.com" class="contact-card-item">
+              <div class="contact-card-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect width="20" height="16" x="2" y="4" rx="2"/>
+                  <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                </svg>
+              </div>
+              <div class="contact-card-details">
+                <span class="contact-card-label">Email Address</span>
+                <span class="contact-card-value">synthex2026@gmail.com</span>
+              </div>
+            </a>
+
+            <!-- Contact Number -->
+            <a href="tel:+94712345678" class="contact-card-item">
+              <div class="contact-card-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                </svg>
+              </div>
+              <div class="contact-card-details">
+                <span class="contact-card-label">Contact Number</span>
+                <span class="contact-card-value">+94 71 234 5678</span>
+              </div>
+            </a>
+
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-left">
+        <div class="brand-logo footer-logo">
+          <span class="logo-text">SYNTHEX &nbsp;<span class="logo-accent">2026</span></span>
+        </div>
+        <p class="footer-tagline">Society of Technological Studies</p>
+        <p class="footer-tagline">Department of Physical Sciences and Technology</p>
+        <p class="footer-tagline">Faculty of Applied Sciences</p>
+        <p class="footer-tagline">Sabaragamuwa University of Sri Lanka</p>
+      </div>
+
+      <div class="footer-right">
+        <div class="footer-logos-group">
+          <img src="STS.png" alt="STS Logo" class="footer-sts-logo">
+          <img src="SUSL.png" alt="SUSL Logo" class="footer-sts-logo">
+        </div>
+        <p class="copyright">© 2026 SYNTHEX. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- App Script -->
+  <script src="app.js"></script>
+</body>
+</html>
