@@ -1,0 +1,7 @@
+.git/
+node_modules/
+.env*
+supabase/
+tests/
+scripts/cleanup-orphan-papers.mjs
+google-apps-script.js

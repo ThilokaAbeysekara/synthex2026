@@ -1,0 +1,52 @@
+
+{
+  "framework": null,
+  "buildCommand": null,
+  "outputDirectory": ".",
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        }
+      ]
+    },
+    {
+      "source": "/public-config.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/supabase/:path*",
+      "destination": "/404.html"
+    },
+    {
+      "source": "/tests/:path*",
+      "destination": "/404.html"
+    },
+    {
+      "source": "/scripts/:path*",
+      "destination": "/404.html"
+    },
+    {
+      "source": "/google-apps-script.js",
+      "destination": "/404.html"
+    }
+  ]
+}

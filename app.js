@@ -2,10 +2,11 @@
  * ==========================================================================
  * SYNTHEX 2026 - PITCH COMPETITION WEB APPLICATION
  * High-performance, reactive UI logic, constellation animation,
- * form validation, celebration effects, and Google Sheets integration.
+ * form validation, celebration effects, and private Supabase submissions.
  * ==========================================================================
  */
 
+<<<<<<< HEAD
 // Configuration & Default Endpoints
 const CONFIG = {
   // =========================================================================
@@ -38,6 +39,13 @@ const CONFIG = {
   customScriptUrlKey: "synthex_custom_script_url",
   localSubmissionsKey: "synthex_submissions_backup"
 };
+=======
+// Submission data is sent only to Supabase. Public config is built from env.
+const CONFIG = { submissionsOpen: true, maxFileSize: 5 * 1024 * 1024,
+  minGroupMembers: 2, maxGroupMembers: 6 };
+let submissionInFlight = false;
+let pendingSubmission = null;
+>>>>>>> 5ee7a66 (updated)
 
 // State
 let selectedSubmissionType = "individual"; // "individual" | "group"
@@ -55,7 +63,6 @@ document.addEventListener("DOMContentLoaded", () => {
   initBulbInteractions();
   initModals();
   initSettings();
-  updateBackupCounter();
 });
 
 /**
@@ -813,6 +820,7 @@ function initBulbInteractions() {
 
 async function handleFormSubmit(e) {
   e.preventDefault();
+  if (submissionInFlight) return;
 
   if (!isSubmissionsOpen()) {
     showAlert("Submissions are currently closed. New ideas cannot be submitted at this time.", "error");
@@ -901,6 +909,8 @@ async function handleFormSubmit(e) {
   showAlert("", "");
 
   // Button Loading State
+  submissionInFlight = true;
+  form.setAttribute("aria-busy", "true");
   submitBtn.disabled = true;
   btnSpinner.style.display = "inline-block";
   btnLabel.textContent = "Processing...";
@@ -945,16 +955,31 @@ async function handleFormSubmit(e) {
   };
 
   try {
+<<<<<<< HEAD
     // 1. Submit to Google Sheets (Direct Apps Script Webhook or Google Form fallback)
     await transmitToGoogleSheets(submissionPayload);
+=======
+    const { validateSubmission, validatePdf } = await import('./submission-validation.mjs');
+    const members = selectedSubmissionType === 'individual'
+      ? [{ regNo: document.getElementById('regNo').value, fullName: document.getElementById('fullName').value }]
+      : Array.from(document.querySelectorAll('#members-table-body .member-row'), row => ({
+          regNo: row.querySelector('.member-reg').value, fullName: row.querySelector('.member-name').value
+        }));
+    const data = validateSubmission({ submissionType: selectedSubmissionType, batch, topic, email, phone, members });
+    const file = fileElem?.files?.[0];
+    await validatePdf(file);
+    // Reuse the request token when retrying the same payload after a lost response.
+    const digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer());
+    const fingerprint = JSON.stringify(data) + Array.from(new Uint8Array(digest), n => n.toString(16).padStart(2, '0')).join('');
+    if (!pendingSubmission || pendingSubmission.fingerprint !== fingerprint) {
+      pendingSubmission = { fingerprint, token: crypto.randomUUID() };
+    }
+    const result = await transmitToSupabase(data, file, pendingSubmission.token);
+    pendingSubmission = null;
+    showSuccessModal({ ...data, id: result.id, submissionTypeTitle, participantSummary });
+>>>>>>> 5ee7a66 (updated)
 
-    // 2. Save backup locally in browser
-    saveSubmissionLocally(submissionPayload);
-
-    // 3. Trigger Celebration Modal & Confetti
-    showSuccessModal(submissionPayload);
-
-    // 4. Reset Form & Dynamic Member Table
+    // 5. Reset Form & Dynamic Member Table
     form.reset();
     resetGroupMembersTable();
     document.querySelectorAll(".batch-pill").forEach(p => p.classList.remove("active"));
@@ -975,16 +1000,23 @@ async function handleFormSubmit(e) {
 
   } catch (error) {
     console.error("Submission transmission error:", error);
+<<<<<<< HEAD
     // Still save locally so no participant work is lost
     saveSubmissionLocally(submissionPayload);
     showAlert("Transmission Notice: Could not sync directly to Google Sheets (" + (error.message || "Network Error") + "). Your submission has been saved safely in your browser local backup. Please check your Google Apps Script Web App settings.", "error");
+=======
+    showAlert(error.message || 'Submission failed. Your form is unchanged; please try again.', 'error');
+>>>>>>> 5ee7a66 (updated)
   } finally {
+    submissionInFlight = false;
+    form.removeAttribute('aria-busy');
     submitBtn.disabled = false;
     btnSpinner.style.display = "none";
     btnLabel.textContent = "Submit Research Idea";
   }
 }
 
+<<<<<<< HEAD
 /**
  * Helper to read File as Base64 Data URL for Google Drive storage
  */
@@ -1044,6 +1076,8 @@ async function transmitToGoogleSheets(data) {
   }
 }
 
+=======
+>>>>>>> 5ee7a66 (updated)
 function showAlert(message, type) {
   const alertBox = document.getElementById("form-alert");
   if (!alertBox) return;
@@ -1058,31 +1092,6 @@ function showAlert(message, type) {
   alertBox.textContent = message;
   alertBox.className = `form-alert alert-${type}`;
   alertBox.style.display = "flex";
-}
-
-/* ==========================================================================
-   4. LOCAL STORAGE BACKUP SYSTEM (Guarantees zero lost submissions)
-   ========================================================================== */
-function saveSubmissionLocally(data) {
-  try {
-    const existing = JSON.parse(localStorage.getItem(CONFIG.localSubmissionsKey) || "[]");
-    existing.unshift(data);
-    localStorage.setItem(CONFIG.localSubmissionsKey, JSON.stringify(existing));
-    updateBackupCounter();
-  } catch (err) {
-    console.warn("Could not save to local storage:", err);
-  }
-}
-
-function updateBackupCounter() {
-  const counter = document.getElementById("backup-count");
-  if (!counter) return;
-  try {
-    const existing = JSON.parse(localStorage.getItem(CONFIG.localSubmissionsKey) || "[]");
-    counter.textContent = existing.length;
-  } catch (e) {
-    counter.textContent = "0";
-  }
 }
 
 /* ==========================================================================
@@ -1190,10 +1199,9 @@ function triggerConfetti() {
   render();
 }
 
-/* ==========================================================================
-   6. SPREADSHEET SETTINGS & CSV EXPORT
-   ========================================================================== */
+// Keep the original settings icon and modal structure without a login screen.
 function initSettings() {
+<<<<<<< HEAD
   const openBtn = document.getElementById("open-config-btn");
   const closeBtn = document.getElementById("close-config-btn");
   const saveBtn = document.getElementById("save-config-btn");
@@ -1319,10 +1327,29 @@ function initSettings() {
   if (exportBtn) {
     exportBtn.addEventListener("click", exportSubmissionsToCSV);
   }
+=======
+  const modal = document.getElementById('config-modal');
+  document.getElementById('open-config-btn')?.addEventListener('click', () => {
+    if (modal) modal.style.display = 'flex';
+  });
+  document.getElementById('close-config-btn')?.addEventListener('click', () => {
+    if (modal) modal.style.display = 'none';
+  });
+  modal?.addEventListener('click', event => {
+    if (event.target === modal) modal.style.display = 'none';
+  });
+>>>>>>> 5ee7a66 (updated)
 }
 
-function exportSubmissionsToCSV() {
+async function transmitToSupabase(data, file, token) {
+  const config = await window.synthexConfig();
+  const body = new FormData();
+  body.append('payload', JSON.stringify(data));
+  body.append('requestToken', token);
+  body.append('conceptPaper', file, file.name);
+  let response;
   try {
+<<<<<<< HEAD
     const submissions = JSON.parse(localStorage.getItem(CONFIG.localSubmissionsKey) || "[]");
     if (submissions.length === 0) {
       alert("No stored submissions to export yet.");
@@ -1367,5 +1394,14 @@ function exportSubmissionsToCSV() {
     URL.revokeObjectURL(url);
   } catch (err) {
     console.error("Export error:", err);
+=======
+    response = await fetch(`${config.url}/functions/v1/submit-research`, {
+      method: 'POST', headers: { apikey: config.publishableKey }, body,
+      signal: AbortSignal.timeout(90000)
+    });
+  } catch {
+    throw new Error('The server response was interrupted. Keep this page open and retry the same form to safely recover your confirmation.');
+>>>>>>> 5ee7a66 (updated)
   }
+  return window.synthexReadSubmissionResponse(response);
 }

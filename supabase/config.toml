@@ -1,0 +1,5 @@
+project_id = "synthex2026"
+
+[functions.submit-research]
+# Public participants have no Auth JWT. The function validates requests itself.
+verify_jwt = false

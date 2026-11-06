@@ -43,8 +43,13 @@
           <span>Submissions Open</span>
         </span>
 
+<<<<<<< HEAD
         <!-- Google Sheets Sync & Settings Button -->
         <button type="button" id="open-config-btn" class="nav-icon-btn" title="Google Sheets Sync Settings" aria-label="Google Sheets Settings">
+=======
+        <!-- Submission information -->
+        <button type="button" id="open-config-btn" class="nav-icon-btn" title="Submission information" aria-label="Submission information">
+>>>>>>> 5ee7a66 (updated)
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
             <circle cx="12" cy="12" r="3"/>
@@ -416,7 +421,7 @@
                   id="conceptPaper"
                   name="conceptPaper"
                   class="file-upload-input"
-                  accept=".pdf,.doc,.docx"
+                  accept=".pdf,application/pdf"
                   required
                 >
                 <label for="conceptPaper" class="file-upload-label">
@@ -429,7 +434,7 @@
                   </div>
                   <div class="file-upload-text">
                     <span class="file-upload-title" id="file-upload-title">Click to upload your concept paper</span>
-                    <span class="file-upload-hint">PDF, DOC, or DOCX &nbsp;&bull;&nbsp; Max 10MB</span>
+                    <span class="file-upload-hint">PDF only &nbsp;&bull;&nbsp; Max 5 MB</span>
                   </div>
                 </label>
                 <div class="file-selected-info" id="file-selected-info" style="display:none;">
@@ -508,7 +513,7 @@
             </div>
 
             <!-- Submission Status Alert -->
-            <div id="form-alert" class="form-alert" style="display: none;"></div>
+            <div id="form-alert" role="alert" aria-live="polite" class="form-alert" style="display: none;"></div>
 
             <!-- Submit Button & Action Bar -->
             <div class="form-action-bar">
@@ -521,6 +526,7 @@
                 </svg>
               </button>
 
+<<<<<<< HEAD
               <!-- Direct Google Form Option -->
               <p style="text-align: center; font-size: 0.85rem; color: var(--text-dim); margin-top: 0.25rem;">
                 Prefer Google Forms? 
@@ -528,6 +534,9 @@
                   Open Official Google Form Directly &nearr;
                 </a>
               </p>
+=======
+              <p style="text-align: center; font-size: 0.85rem; color: var(--text-dim); margin-top: 0.25rem;">No account needed. Your concept paper is stored privately.</p>
+>>>>>>> 5ee7a66 (updated)
             </div>
 
           </form>
@@ -550,7 +559,7 @@
       <span class="success-badge">SUBMISSION CONFIRMED</span>
       <h3 class="modal-title">Idea Successfully Submitted!</h3>
       <p class="modal-desc">
-        Your research proposal has been recorded and safely synchronized with the official SYNTHEX 2026 Google Spreadsheet.
+        Your research proposal and concept paper have been securely recorded. Save your reference ID for future enquiries.
       </p>
 
       <!-- Submission Summary Box -->
@@ -588,21 +597,15 @@
     </div>
   </div>
 
-  <!-- Google Spreadsheet Integration Config Modal -->
+  <!-- Original settings modal structure; no account or sign-in needed. -->
   <div id="config-modal" class="modal-backdrop" style="display: none;">
     <div class="modal-card config-card">
       <div class="config-modal-header">
-        <div class="config-title-group">
-          <div class="config-icon">📊</div>
-          <div>
-            <h3>Google Spreadsheet Sync Settings</h3>
-            <p>Configure where submitted ideas are stored</p>
-          </div>
-        </div>
+        <div class="config-title-group"><div><h3>Submission Information</h3><p>SYNTHEX 2026 idea submissions</p></div></div>
         <button id="close-config-btn" class="close-x-btn" aria-label="Close">&times;</button>
       </div>
-
       <div class="config-content">
+<<<<<<< HEAD
         <!-- Active Status Indicator -->
         <div class="integration-status-card" id="config-status-card">
           <div class="status-indicator-live">
@@ -671,6 +674,9 @@
 
       <div class="modal-actions config-actions">
         <button id="save-config-btn" class="modal-primary-btn">Save Settings</button>
+=======
+        <p class="config-info-text">No account or Google login is required. Upload your concept paper as a PDF of up to 5 MB. Your paper is stored privately. Save the reference ID shown after a successful submission.</p>
+>>>>>>> 5ee7a66 (updated)
       </div>
     </div>
   </div>
@@ -702,6 +708,8 @@
   <canvas id="confetti-canvas"></canvas>
 
   <!-- App Script -->
+  <script src="public-config.js"></script>
+  <script src="supabase-client.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
