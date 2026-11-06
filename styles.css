@@ -3551,6 +3551,7 @@ body {
   text-decoration: none;
   transition: all 0.25s ease;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  text-align: left;
 }
 
 .contact-card-item:hover {
@@ -3581,6 +3582,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  text-align: left;
+  align-items: flex-start;
 }
 
 .contact-card-label {
@@ -3589,6 +3592,8 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--text-muted);
+  text-align: left;
+  display: block;
 }
 
 .contact-card-value {
@@ -3597,8 +3602,28 @@ body {
   font-weight: 600;
   color: var(--text-pure);
   transition: color 0.2s ease;
+  text-align: left;
+  word-break: break-word;
 }
 
 .contact-card-item:hover .contact-card-value {
   color: var(--accent-green);
+}
+
+@media (max-width: 992px) {
+  #contact-us .about-content {
+    text-align: left;
+    align-items: flex-start;
+  }
+
+  .contact-card-item {
+    text-align: left;
+  }
+
+  .contact-card-details,
+  .contact-card-label,
+  .contact-card-value {
+    text-align: left !important;
+    align-items: flex-start !important;
+  }
 }
