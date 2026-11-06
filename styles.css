@@ -3598,7 +3598,7 @@ body {
 
 .contact-card-value {
   font-family: 'Outfit', sans-serif;
-  font-size: 1.05rem;
+  font-size: 1.0rem;
   font-weight: 600;
   color: var(--text-pure);
   transition: color 0.2s ease;
