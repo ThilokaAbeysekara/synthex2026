@@ -15,8 +15,13 @@ const CONFIG = {
   // =========================================================================
   submissionsOpen: true,
 
-  // Pre-configured Google Form response endpoint & unified entry mapping
+  // Google Apps Script Web App URL (Recommended for Google Sheets + Drive uploads)
+  // You can paste your deployed Web App URL here or configure it via the on-site Settings modal.
+  appsScriptUrl: "",
+
+  // Pre-configured Google Form response endpoint & unified entry mapping (Fallback)
   googleForm: {
+    viewUrl: "https://docs.google.com/forms/d/e/1FAIpQLScD6u8ZjARToVR_nfJev-ZMqbMspLc26ztLPTk9jkQNrdYk8w/viewform?usp=header",
     endpoint: "https://docs.google.com/forms/d/e/1FAIpQLScD6u8ZjARToVR_nfJev-ZMqbMspLc26ztLPTk9jkQNrdYk8w/formResponse",
     entries: {
       submissionType: "entry.1807794449",
@@ -29,7 +34,7 @@ const CONFIG = {
     },
     pageHistory: "0"
   },
-  // Custom Google Apps Script Web App URL (if provided by user)
+  // Custom Google Apps Script Web App URL (stored in localStorage)
   customScriptUrlKey: "synthex_custom_script_url",
   localSubmissionsKey: "synthex_submissions_backup"
 };
@@ -800,7 +805,7 @@ function initBulbInteractions() {
         }, 600);
       } else {
         // On homepage: navigate to dedicated submit page
-        window.location.href = "submit.html";
+        window.location.href = "https://script.google.com/macros/s/AKfycbx8hf2RsWlm1TvlpXTmVItXvMeuadtkoHi24U8A7SSMY6LYNSCL2tiA1GeICtu2aFfA/exec";
       }
     });
   }
@@ -892,20 +897,6 @@ async function handleFormSubmit(e) {
     participantSummary = `${membersData.leadName} & Team (${membersData.count} Members)`;
   }
 
-  const submissionPayload = {
-    id: "SYNTHEX-" + Date.now().toString(36).toUpperCase(),
-    timestamp: new Date().toISOString(),
-    submissionType: selectedSubmissionType,
-    submissionTypeTitle,
-    batch,
-    regAndNames,
-    participantSummary,
-    topic,
-    description,
-    email,
-    phone
-  };
-
   // Clear Alert
   showAlert("", "");
 
@@ -914,8 +905,47 @@ async function handleFormSubmit(e) {
   btnSpinner.style.display = "inline-block";
   btnLabel.textContent = "Processing...";
 
+  // 4. Read File to Base64 (if uploaded) for Google Drive storage
+  let fileData = null;
+  let fileName = "";
+  let fileType = "";
+
+  if (fileElem && fileElem.files && fileElem.files[0]) {
+    const file = fileElem.files[0];
+    fileName = file.name;
+    fileType = file.type || "application/octet-stream";
+    try {
+      fileData = await readFileAsBase64(file);
+    } catch (readErr) {
+      console.warn("Could not read file as Base64:", readErr);
+    }
+  }
+
+  const regNoVal = selectedSubmissionType === "individual" && document.getElementById("regNo") ? document.getElementById("regNo").value.trim() : "";
+  const fullNameVal = selectedSubmissionType === "individual" && document.getElementById("fullName") ? document.getElementById("fullName").value.trim() : "";
+
+  const submissionPayload = {
+    id: "SYNTHEX-" + Date.now().toString(36).toUpperCase(),
+    timestamp: new Date().toISOString(),
+    submissionType: selectedSubmissionType,
+    submissionTypeTitle,
+    batch,
+    regNo: regNoVal,
+    fullName: fullNameVal,
+    groupMembers: selectedSubmissionType === "group" ? regAndNames : "",
+    regAndNames,
+    participantSummary,
+    topic,
+    description: fileName || description,
+    fileName,
+    fileType,
+    fileData,
+    email,
+    phone
+  };
+
   try {
-    // 1. Submit to Google Sheets (Direct Form endpoint or Apps Script Webhook)
+    // 1. Submit to Google Sheets (Direct Apps Script Webhook or Google Form fallback)
     await transmitToGoogleSheets(submissionPayload);
 
     // 2. Save backup locally in browser
@@ -935,11 +965,19 @@ async function handleFormSubmit(e) {
     const c1 = document.getElementById("char-counter");
     if (c1) c1.textContent = "0 characters";
 
+    // Reset file preview wrapper
+    const fileWrapper = document.getElementById("file-upload-wrapper");
+    const fileSelectedInfo = document.getElementById("file-selected-info");
+    const fileUploadLabel = document.querySelector(".file-upload-label");
+    if (fileWrapper) fileWrapper.classList.remove("has-file");
+    if (fileSelectedInfo) fileSelectedInfo.style.display = "none";
+    if (fileUploadLabel) fileUploadLabel.style.display = "flex";
+
   } catch (error) {
-    console.error("Submission error:", error);
-    // Still save locally so no work is lost
+    console.error("Submission transmission error:", error);
+    // Still save locally so no participant work is lost
     saveSubmissionLocally(submissionPayload);
-    showSuccessModal(submissionPayload);
+    showAlert("Transmission Notice: Could not sync directly to Google Sheets (" + (error.message || "Network Error") + "). Your submission has been saved safely in your browser local backup. Please check your Google Apps Script Web App settings.", "error");
   } finally {
     submitBtn.disabled = false;
     btnSpinner.style.display = "none";
@@ -948,17 +986,32 @@ async function handleFormSubmit(e) {
 }
 
 /**
+ * Helper to read File as Base64 Data URL for Google Drive storage
+ */
+function readFileAsBase64(file) {
+  return new Promise((resolve, reject) => {
+    if (!file) return resolve(null);
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
  * Transmits the research idea to Google Sheets
- * Uses direct Google Form unified endpoint (or custom Apps Script webhook if configured)
+ * Uses direct Google Apps Script Webhook if configured, or falls back to Google Form endpoint
  */
 async function transmitToGoogleSheets(data) {
-  const customUrl = localStorage.getItem(CONFIG.customScriptUrlKey);
+  const customUrl = localStorage.getItem(CONFIG.customScriptUrlKey) || CONFIG.appsScriptUrl;
 
   if (customUrl && customUrl.trim().startsWith("http")) {
-    const response = await fetch(customUrl.trim(), {
+    const targetUrl = customUrl.trim();
+    // Using text/plain avoids CORS preflight OPTIONS to Google Apps Script
+    const response = await fetch(targetUrl, {
       method: "POST",
       mode: "no-cors",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify(data)
     });
     return response;
@@ -966,20 +1019,20 @@ async function transmitToGoogleSheets(data) {
     const formUrl = CONFIG.googleForm.endpoint;
     const formData = new URLSearchParams();
     
-    // Core parameters for Google Form submission
+    // Parameters for Google Form submission
     formData.append("fvv", "1");
     formData.append("pageHistory", CONFIG.googleForm.pageHistory);
     formData.append(CONFIG.googleForm.entries.submissionType, data.submissionTypeTitle);
     formData.append(CONFIG.googleForm.entries.batch, data.batch);
     formData.append(CONFIG.googleForm.entries.regAndNames, data.regAndNames);
     formData.append(CONFIG.googleForm.entries.topic, data.topic);
-    formData.append(CONFIG.googleForm.entries.description, data.description);
+    formData.append(CONFIG.googleForm.entries.description, data.description || data.fileName || "");
     formData.append(CONFIG.googleForm.entries.email, data.email);
     if (data.phone) {
       formData.append(CONFIG.googleForm.entries.phone, data.phone);
     }
 
-    await fetch(formUrl, {
+    const response = await fetch(formUrl, {
       method: "POST",
       mode: "no-cors",
       headers: {
@@ -987,6 +1040,7 @@ async function transmitToGoogleSheets(data) {
       },
       body: formData.toString()
     });
+    return response;
   }
 }
 
@@ -1140,17 +1194,97 @@ function triggerConfetti() {
    6. SPREADSHEET SETTINGS & CSV EXPORT
    ========================================================================== */
 function initSettings() {
+  const openBtn = document.getElementById("open-config-btn");
   const closeBtn = document.getElementById("close-config-btn");
   const saveBtn = document.getElementById("save-config-btn");
   const modal = document.getElementById("config-modal");
   const input = document.getElementById("custom-script-url");
   const exportBtn = document.getElementById("export-csv-btn");
+  const testBtn = document.getElementById("test-connection-btn");
+  const testResult = document.getElementById("test-connection-result");
+
+  function refreshModalState() {
+    const currentUrl = localStorage.getItem(CONFIG.customScriptUrlKey) || CONFIG.appsScriptUrl;
+    const statusTitle = document.getElementById("config-status-title");
+    const statusDesc = document.getElementById("config-status-desc");
+    const statusBadge = document.getElementById("config-status-badge");
+    const liveDot = document.getElementById("config-live-dot");
+
+    if (input) {
+      input.value = localStorage.getItem(CONFIG.customScriptUrlKey) || CONFIG.appsScriptUrl || "";
+    }
+
+    if (currentUrl && currentUrl.trim().startsWith("http")) {
+      if (statusBadge) {
+        statusBadge.textContent = "CONNECTED";
+        statusBadge.style.background = "var(--accent-green)";
+        statusBadge.style.color = "var(--text-dark)";
+      }
+      if (statusTitle) statusTitle.textContent = "Apps Script Webhook Active";
+      if (statusDesc) statusDesc.textContent = "Connected: " + currentUrl.slice(0, 45) + "...";
+      if (liveDot) {
+        liveDot.style.background = "var(--accent-green)";
+        liveDot.style.boxShadow = "0 0 10px var(--accent-green)";
+      }
+    } else {
+      if (statusBadge) {
+        statusBadge.textContent = "SETUP NEEDED";
+        statusBadge.style.background = "#f59e0b";
+        statusBadge.style.color = "#000";
+      }
+      if (statusTitle) statusTitle.textContent = "Google Sheets Webhook Not Set";
+      if (statusDesc) statusDesc.textContent = "Deploy google-apps-script.js & paste the Web App URL below";
+      if (liveDot) {
+        liveDot.style.background = "#f59e0b";
+        liveDot.style.boxShadow = "0 0 10px #f59e0b";
+      }
+    }
+  }
 
   if (openBtn && modal) {
     openBtn.addEventListener("click", () => {
-      if (input) input.value = localStorage.getItem(CONFIG.customScriptUrlKey) || "";
+      refreshModalState();
       updateBackupCounter();
+      if (testResult) testResult.style.display = "none";
       modal.style.display = "flex";
+    });
+  }
+
+  if (testBtn) {
+    testBtn.addEventListener("click", async () => {
+      const urlToTest = input ? input.value.trim() : "";
+      if (!urlToTest || !urlToTest.startsWith("http")) {
+        if (testResult) {
+          testResult.style.display = "block";
+          testResult.style.color = "#f43f5e";
+          testResult.textContent = "Please enter a valid Google Apps Script Web App URL first.";
+        }
+        return;
+      }
+
+      testBtn.disabled = true;
+      testBtn.textContent = "Testing...";
+      if (testResult) {
+        testResult.style.display = "block";
+        testResult.style.color = "#38bdf8";
+        testResult.textContent = "Testing connection to Google Apps Script...";
+      }
+
+      try {
+        await fetch(urlToTest, { mode: "no-cors" });
+        if (testResult) {
+          testResult.style.color = "#00ff87";
+          testResult.textContent = "✓ Webhook endpoint is reachable! Click 'Save Settings' to activate.";
+        }
+      } catch (err) {
+        if (testResult) {
+          testResult.style.color = "#f43f5e";
+          testResult.textContent = "Could not reach endpoint: " + err.message;
+        }
+      } finally {
+        testBtn.disabled = false;
+        testBtn.textContent = "Test Connection";
+      }
     });
   }
 
@@ -1176,6 +1310,7 @@ function initSettings() {
           localStorage.removeItem(CONFIG.customScriptUrlKey);
         }
       }
+      refreshModalState();
       modal.style.display = "none";
     });
   }
@@ -1194,15 +1329,30 @@ function exportSubmissionsToCSV() {
       return;
     }
 
-    const headers = ["Reference ID", "Timestamp", "Registration No", "Full Name", "Batch", "Topic", "Description"];
+    const headers = [
+      "Reference ID", 
+      "Timestamp", 
+      "Submission Type", 
+      "Batch", 
+      "Registration & Member Details", 
+      "Presenter / Lead Name", 
+      "Topic of Idea", 
+      "Concept Paper / Description", 
+      "Email", 
+      "Contact Number"
+    ];
+
     const rows = submissions.map(s => [
-      `"${s.id}"`,
-      `"${s.timestamp}"`,
-      `"${(s.regNo || "").replace(/"/g, '""')}"`,
-      `"${(s.fullName || "").replace(/"/g, '""')}"`,
+      `"${s.id || ""}"`,
+      `"${s.timestamp || ""}"`,
+      `"${(s.submissionTypeTitle || s.submissionType || "").replace(/"/g, '""')}"`,
       `"${(s.batch || "").replace(/"/g, '""')}"`,
+      `"${(s.regAndNames || s.regNo || "").replace(/"/g, '""')}"`,
+      `"${(s.participantSummary || s.fullName || "").replace(/"/g, '""')}"`,
       `"${(s.topic || "").replace(/"/g, '""')}"`,
-      `"${(s.description || "").replace(/"/g, '""')}"`
+      `"${(s.fileName || s.description || "").replace(/"/g, '""')}"`,
+      `"${(s.email || "").replace(/"/g, '""')}"`,
+      `"${(s.phone || "").replace(/"/g, '""')}"`
     ]);
 
     const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\n");

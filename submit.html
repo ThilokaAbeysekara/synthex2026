@@ -31,7 +31,7 @@
   <!-- Navigation Bar -->
   <header class="navbar">
     <div class="nav-container">
-      <a href="index.html" class="brand-logo">
+      <a href="https://www.synthex2026.live/" class="brand-logo">
         <span class="logo-text">SYNTHEX &nbsp; <span class="logo-accent">2026</span></span>
       </a>
 
@@ -43,8 +43,16 @@
           <span>Submissions Open</span>
         </span>
 
+        <!-- Google Sheets Sync & Settings Button -->
+        <button type="button" id="open-config-btn" class="nav-icon-btn" title="Google Sheets Sync Settings" aria-label="Google Sheets Settings">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+
         <!-- Return to Homepage Button -->
-        <a href="index.html" class="nav-back-btn">
+        <a href="https://www.synthex2026.live/" class="nav-back-btn">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="m15 18-6-6 6-6"/>
           </svg>
@@ -116,7 +124,7 @@
               </div>
             </div>
             <div class="closed-actions">
-              <a href="index.html" class="closed-home-btn">
+              <a href="https://www.synthex2026.live/" class="closed-home-btn">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
                   <polyline points="9 22 9 12 15 12 15 22"/>
@@ -201,6 +209,7 @@
                 <option value="21/22">21/22</option>
                 <option value="22/23">22/23</option>
                 <option value="23/24">23/24</option>
+                <option value="24/25">24/25</option>
               </select>
             </div>
 
@@ -511,6 +520,14 @@
                   <path d="m12 5 7 7-7 7"></path>
                 </svg>
               </button>
+
+              <!-- Direct Google Form Option -->
+              <p style="text-align: center; font-size: 0.85rem; color: var(--text-dim); margin-top: 0.25rem;">
+                Prefer Google Forms? 
+                <a href="https://docs.google.com/forms/d/e/1FAIpQLScD6u8ZjARToVR_nfJev-ZMqbMspLc26ztLPTk9jkQNrdYk8w/viewform?usp=header" target="_blank" rel="noopener" style="color: var(--accent-green); text-decoration: underline; font-weight: 500;">
+                  Open Official Google Form Directly &nearr;
+                </a>
+              </p>
             </div>
 
           </form>
@@ -566,7 +583,7 @@
 
       <div class="modal-actions">
         <button id="close-modal-btn" class="modal-primary-btn">Submit Another Idea</button>
-        <a href="index.html" class="modal-secondary-btn">Return to Home</a>
+        <a href="https://www.synthex2026.live/" class="modal-secondary-btn">Return to Home</a>
       </div>
     </div>
   </div>
@@ -586,46 +603,62 @@
       </div>
 
       <div class="config-content">
-        <!-- Active Status -->
-        <div class="integration-status-card">
+        <!-- Active Status Indicator -->
+        <div class="integration-status-card" id="config-status-card">
           <div class="status-indicator-live">
-            <span class="live-dot"></span>
+            <span class="live-dot" id="config-live-dot"></span>
             <div>
-              <strong>Live Mode: Connected to SYNTHEX Google Form & Sheet</strong>
-              <p>Form ID: <code>17yshc-_WReK7hkJFw-Rja6fRgYTfuDDETcJBow-sPzI</code></p>
+              <strong id="config-status-title">Google Sheets Webhook Sync</strong>
+              <p id="config-status-desc">Directly records submissions & uploads Concept Papers to Google Drive</p>
             </div>
           </div>
-          <span class="connected-badge">ACTIVE</span>
+          <span class="connected-badge" id="config-status-badge">READY</span>
         </div>
 
         <div class="config-tabs">
           <p class="config-info-text">
-            Every submission sent through this site is instantly submitted into your Google Form's response database and its linked Google Spreadsheet!
+            To receive form submissions in your Google Spreadsheet with uploaded concept paper documents safely stored in Google Drive:
           </p>
 
           <div class="guide-box">
-            <h4>How to view your responses in Google Sheets:</h4>
+            <h4>Quick 1-Minute Setup with Google Apps Script:</h4>
             <ol>
-              <li>Open your Google Form at <a href="https://docs.google.com/forms/d/17yshc-_WReK7hkJFw-Rja6fRgYTfuDDETcJBow-sPzI/edit" target="_blank" rel="noopener">Google Forms Edit</a></li>
-              <li>Click on the <strong>Responses</strong> tab at the top</li>
-              <li>Click the green <strong>"Link to Sheets"</strong> icon</li>
-              <li>All entries submitted from this website will appear in real time in your Google Spreadsheet!</li>
+              <li>Open your Google Sheet at <a href="https://sheets.new" target="_blank" rel="noopener">sheets.new</a> (or your existing sheet).</li>
+              <li>Go to <strong>Extensions &gt; Apps Script</strong> and paste the contents of <code>google-apps-script.js</code>.</li>
+              <li>Click <strong>Deploy &gt; New deployment &gt; Web app</strong>.</li>
+              <li>Set <em>Execute as:</em> <strong>Me</strong> and <em>Who has access:</em> <strong>Anyone</strong> (crucial).</li>
+              <li>Copy the Web App URL (starts with <code>https://script.google.com/macros/s/.../exec</code>) and paste it below!</li>
             </ol>
           </div>
 
-          <!-- Custom Webhook URL Option (for Standalone Google Sheet via Apps Script) -->
+          <!-- Apps Script Webhook URL Field -->
           <div class="advanced-section">
             <label for="custom-script-url" class="advanced-label">
-              <span>Optional: Custom Google Apps Script Web App URL</span>
-              <span class="tag-opt">Advanced</span>
+              <span>Google Apps Script Web App URL</span>
+              <span class="tag-opt">Recommended</span>
             </label>
-            <input 
-              type="url" 
-              id="custom-script-url" 
-              class="form-control code-input" 
-              placeholder="https://script.google.com/macros/s/.../exec"
-            >
-            <p class="input-hint">Leave blank to use the pre-configured default Google Form/Sheet sync, or paste your Apps Script URL here.</p>
+            <div style="display: flex; gap: 0.5rem;">
+              <input 
+                type="url" 
+                id="custom-script-url" 
+                class="form-control code-input" 
+                placeholder="https://script.google.com/macros/s/.../exec"
+                style="flex: 1;"
+              >
+              <button type="button" id="test-connection-btn" class="export-btn" style="white-space: nowrap;">
+                Test Connection
+              </button>
+            </div>
+            <div id="test-connection-result" style="display: none; font-size: 0.8rem; margin-top: 0.25rem;"></div>
+            <p class="input-hint">Once saved, submissions and file uploads flow directly into your Google Spreadsheet in real time.</p>
+          </div>
+
+          <!-- Configured Google Form Reference -->
+          <div style="background: rgba(4, 22, 42, 0.6); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 0.85rem 1rem; margin-bottom: 1.25rem;">
+            <span style="font-size: 0.78rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 0.25rem;">Configured Google Form</span>
+            <a href="https://docs.google.com/forms/d/e/1FAIpQLScD6u8ZjARToVR_nfJev-ZMqbMspLc26ztLPTk9jkQNrdYk8w/viewform?usp=header" target="_blank" rel="noopener" style="font-size: 0.82rem; color: var(--accent-mint); word-break: break-all; text-decoration: underline;">
+              https://docs.google.com/forms/d/e/1FAIpQLScD6u8ZjARToVR_nfJev-ZMqbMspLc26ztLPTk9jkQNrdYk8w/viewform?usp=header &nearr;
+            </a>
           </div>
 
           <!-- Local Backup Data Storage -->

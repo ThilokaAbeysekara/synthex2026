@@ -54,20 +54,34 @@ Then visit: [http://localhost:8000](http://localhost:8000)
 
 ## 📊 Google Spreadsheet Setup Guide
 
-### Method 1: Using Your Existing Form's Linked Sheet (Zero-code)
-1. Open your Google Form: [Google Forms Edit](https://docs.google.com/forms/d/17yshc-_WReK7hkJFw-Rja6fRgYTfuDDETcJBow-sPzI/edit)
-2. Click on the **Responses** tab at the top.
-3. Click the green **"Link to Sheets"** icon (Create a new spreadsheet or select existing).
-4. All submissions made through your new website will immediately flow into that Google Spreadsheet in real time!
+### Method 1: Dedicated Google Apps Script Webhook (Recommended & Reliable)
+This is the **most robust** method. It bypasses all Google Form login barriers, allows submissions from anyone without signing in, and **automatically uploads the Concept Paper (PDF/DOCX) into Google Drive** with a clickable link in your Google Sheet!
 
-### Method 2: Dedicated Google Apps Script Webhook
-1. Create a new Google Spreadsheet at [sheets.new](https://sheets.new).
+1. Create a new Google Spreadsheet at [sheets.new](https://sheets.new) (or open your existing spreadsheet).
 2. Go to **Extensions** > **Apps Script**.
-3. Replace the code in the editor with the contents of [`google-apps-script.js`](file:///d:/SYNTHEX%202026/google-apps-script.js).
+3. Replace the code in the editor with the contents of [`google-apps-script.js`](google-apps-script.js).
 4. Click **Deploy** > **New deployment**.
-5. Select **Web app**, set *Execute as* to **Me**, and *Who has access* to **Anyone**.
-6. Click **Deploy** and copy the generated Web App URL.
-7. On your SYNTHEX website, click the **Settings (Gear icon)** in the top navigation, paste your URL, and click **Save Settings**.
+5. Select **Web app** (via the gear icon next to "Select type").
+6. Set:
+   - *Execute as*: **Me**
+   - *Who has access*: **Anyone** (⚠️ **Crucial**: Must be "Anyone", NOT "Only myself")
+7. Click **Deploy**, authorize permissions if prompted (Advanced -> Go to unsafe -> Allow).
+8. Copy the generated Web App URL (starts with `https://script.google.com/macros/s/.../exec`).
+9. On your SYNTHEX website, click the **Settings (Gear icon)** in the top navigation bar, paste your Web App URL, and click **Save Settings** (or paste it into `CONFIG.appsScriptUrl` in `app.js`).
+
+---
+
+### Method 2: Why Direct Google Form Submissions Often Fail
+If you submit directly to Google Form endpoints from external websites:
+1. **Google Sign-in Requirement**: If the Google Form has "Limit to 1 response", "Restrict to users in [University] domain", or "Collect email addresses: Verified" enabled, Google blocks external POST requests with `HTTP 401 Unauthorized` and redirects to the Google Account login page.
+2. **File Upload Restrictions**: Google Forms NEVER permits anonymous or external submissions if the form has a "File Upload" question, because Google requires respondent authentication for Drive storage.
+3. **Fixing Google Form Direct Submission (Text Only)**:
+   - Open your form at [Google Forms Edit](https://docs.google.com/forms/d/17yshc-_WReK7hkJFw-Rja6fRgYTfuDDETcJBow-sPzI/edit).
+   - Go to **Settings > Responses**:
+     - Turn OFF **"Restrict to users in [Organization]"**
+     - Turn OFF **"Limit to 1 response"**
+     - Set **"Collect email addresses"** to **"Do not collect"**
+   - Note: File attachments cannot be transferred to Google Form via external POST; use Method 1 (Apps Script) for file uploads to Google Drive.
 
 ---
 
