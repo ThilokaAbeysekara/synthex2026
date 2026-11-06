@@ -31,7 +31,7 @@ begin
     raise exception 'Duplicate participant was accepted';
   exception when unique_violation then null;
   end;
-  if exists(select 1 from public.research_submissions where request_token in
+  if exists(select 1 from public.synthex_submissions where request_token in
     ('44444444-4444-4444-8444-444444444444','55555555-5555-4555-8555-555555555555')) then
     raise exception 'Incomplete submission survived a failed transaction';
   end if;
@@ -40,7 +40,7 @@ end $$;
 set local role anon;
 do $$ begin
   begin
-    perform 1 from public.research_submissions;
+    perform 1 from public.synthex_submissions;
     raise exception 'Anonymous SELECT was allowed';
   exception when insufficient_privilege then null; end;
   begin
@@ -61,7 +61,7 @@ set local role authenticated;
 select set_config('request.jwt.claim.sub', '22222222-2222-4222-8222-222222222222', true);
 do $$ begin
   if public.is_portal_admin() then raise exception 'Non-organizer has admin membership'; end if;
-  if exists(select 1 from public.research_submissions) then raise exception 'Non-organizer can read submissions'; end if;
+  if exists(select 1 from public.synthex_submissions) then raise exception 'Non-organizer can read submissions'; end if;
   if exists(select 1 from storage.objects where bucket_id = 'concept-papers') then raise exception 'Non-organizer can read PDFs'; end if;
   begin
     insert into public.portal_admins values ('22222222-2222-4222-8222-222222222222');
@@ -71,7 +71,7 @@ end $$;
 select set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111111', true);
 do $$ begin
   if not public.is_portal_admin() then raise exception 'Organizer denied'; end if;
-  if not exists(select 1 from public.research_submissions where email = 'rls-test@example.invalid') then raise exception 'Organizer cannot read submission'; end if;
+  if not exists(select 1 from public.synthex_submissions where email = 'rls-test@example.invalid') then raise exception 'Organizer cannot read submission'; end if;
   if not exists(select 1 from public.submission_participants where reg_no = 'RLS/001') then raise exception 'Organizer cannot read participant'; end if;
   if not exists(select 1 from storage.objects where bucket_id = 'concept-papers' and name = 'rls-test/paper.pdf') then raise exception 'Organizer cannot read committed PDF'; end if;
   if exists(select 1 from storage.objects where bucket_id = 'concept-papers' and name = 'rls-test/duplicate.pdf') then raise exception 'Uncommitted PDF visible'; end if;

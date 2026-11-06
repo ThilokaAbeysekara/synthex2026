@@ -3,3 +3,7 @@ project_id = "synthex2026"
 [functions.submit-research]
 # Public participants have no Auth JWT. The function validates requests itself.
 verify_jwt = false
+
+[functions.sync-sheets]
+# Server-only worker uses a separate shared secret, checked inside the function.
+verify_jwt = false

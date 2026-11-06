@@ -1,171 +1,71 @@
 /**
- * ==========================================================================
- * SYNTHEX 2026 - GOOGLE SPREADSHEET & DRIVE APPS SCRIPT WEBHOOK
- * ==========================================================================
- * 
- * This script connects your SYNTHEX 2026 website directly to your Google Sheet
- * and automatically saves uploaded Concept Papers (PDF/DOC/DOCX) into Google Drive!
- * 
- * --------------------------------------------------------------------------
- * STEP-BY-STEP DEPLOYMENT INSTRUCTIONS:
- * --------------------------------------------------------------------------
- * 1. Open Google Sheets (https://sheets.new) or your existing spreadsheet.
- * 2. In the top menu, click: Extensions -> Apps Script
- * 3. Delete any code in the editor and PASTE THIS ENTIRE FILE.
- * 4. Click the "Save project" icon (Floppy disk).
- * 5. In the top-right corner, click: Deploy -> New deployment
- * 6. Click the gear icon (Select type) next to "Deployment type" and choose: "Web app"
- * 7. Fill in the deployment details:
- *      - Description: "SYNTHEX 2026 Submissions Webhook"
- *      - Execute as: "Me" (your email)
- *      - Who has access: "Anyone"  <-- CRITICAL: Must be "Anyone", NOT "Only myself"
- * 8. Click "Deploy".
- * 9. If prompted, click "Authorize access", choose your Google account, 
- *    click "Advanced", then click "Go to ... (unsafe)", and click "Allow".
- * 10. COPY the "Web app URL" (it starts with: https://script.google.com/macros/s/.../exec).
- * 11. Open your SYNTHEX website (submit.html), click the Settings (Gear) icon 
- *     in the top navigation bar, paste this URL, and click "Save Settings".
- *     (You can also paste it into CONFIG.appsScriptUrl in app.js).
- * 
- * That's it! Every submission will now instantly appear in your Google Sheet,
- * and uploaded concept papers will be stored in a Google Drive folder with clickable links!
- * ==========================================================================
+ * Server-to-server Sheets bridge. No participant page, Drive upload or public
+ * document links. Deploy as a Web App (execute as owner, access Anyone).
+ * Set Script Properties: SHEETS_SYNC_SECRET, SPREADSHEET_ID and optional SHEET_NAME.
+ * Set the same secret and the /exec URL ONLY in Supabase Edge Function secrets.
  */
-
 function doPost(e) {
+  var lock;
   try {
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-    
-    // Add header row if spreadsheet is empty
+    var properties = PropertiesService.getScriptProperties();
+    var expected = properties.getProperty('SHEETS_SYNC_SECRET');
+    var data = JSON.parse(e && e.postData && e.postData.contents || '{}');
+    if (!expected || !safeEqual_(expected, data.secret)) return json_({ success: false, error: 'Unauthorized.' });
+    var s = data.submission;
+    if (!s || !/^SYNTHEX-[A-F0-9-]{36}$/.test(s.id || '') ||
+        !s.topic || !s.email || !s.filePath || !Array.isArray(s.members) ||
+        (s.submissionType === 'individual' ? s.members.length !== 1 : s.submissionType !== 'group' || s.members.length < 2 || s.members.length > 6)) {
+      return json_({ success: false, error: 'Invalid confirmed registration.' });
+    }
+    var spreadsheetId = properties.getProperty('SPREADSHEET_ID');
+    if (!spreadsheetId) return json_({ success: false, error: 'Bridge not configured.' });
+    lock = LockService.getScriptLock();
+    if (!lock.tryLock(5000)) return json_({ success: false, error: 'Bridge busy; retry later.' });
+    var spreadsheet = SpreadsheetApp.openById(spreadsheetId);
+    var sheetName = properties.getProperty('SHEET_NAME');
+    var sheet = sheetName ? spreadsheet.getSheetByName(sheetName) : spreadsheet.getSheets()[0];
+    if (!sheet) return json_({ success: false, error: 'Configured sheet was not found.' });
     if (sheet.getLastRow() === 0) {
-      sheet.appendRow([
-        "Timestamp",
-        "Reference ID",
-        "Submission Type",
-        "Batch",
-        "Registration & Member Details",
-        "Presenter / Lead Name",
-        "Topic of Idea",
-        "Concept Paper (Drive Link)",
-        "Email",
-        "Contact Number"
-      ]);
-      
-      // Style header row
-      var headerRange = sheet.getRange(1, 1, 1, 10);
-      headerRange.setFontWeight("bold");
-      headerRange.setBackground("#020712");
-      headerRange.setFontColor("#00FF87");
-      headerRange.setHorizontalAlignment("center");
+      sheet.appendRow(['Timestamp', 'Reference ID', 'Submission Type', 'Batch',
+        'Registration & Member Details', 'Presenter / Lead Name', 'Topic of Idea',
+        'Concept Paper (Private Storage Path)', 'Email', 'Contact Number']);
+      sheet.getRange(1, 1, 1, 10).setFontWeight('bold').setBackground('#020712').setFontColor('#00FF87');
       sheet.setFrozenRows(1);
     }
-
-    // Parse incoming data (supports JSON text/plain or urlencoded)
-    var data = {};
-    if (e && e.postData && e.postData.contents) {
-      try {
-        data = JSON.parse(e.postData.contents);
-      } catch (jsonErr) {
-        data = e.parameter || {};
-      }
-    } else if (e && e.parameter) {
-      data = e.parameter;
+    // The existing spreadsheet format keeps reference IDs in column B.
+    var count = sheet.getLastRow();
+    if (count > 1 && sheet.getRange(2, 2, count - 1, 1).createTextFinder(s.id).matchEntireCell(true).findNext()) {
+      return json_({ success: true, id: s.id, duplicate: true });
     }
-
-    var timestamp = data.timestamp || new Date().toLocaleString();
-    var id = data.id || "SYNTHEX-" + Utilities.getUuid().slice(0, 8).toUpperCase();
-    var subType = data.submissionTypeTitle || (data.submissionType === "group" ? "Group Submission" : "Individual Submission");
-    var batch = data.batch || "";
-    
-    // Member details (handles both individual & compiled group tables)
-    var regDetails = data.regAndNames || (data.submissionType === "group" ? data.groupMembers : data.regNo) || "";
-    var presenterName = data.participantSummary || data.fullName || (data.submissionType === "group" ? "Team Entry" : "");
-    var topic = data.topic || data.groupTopic || "";
-    var email = data.email || data.groupEmail || "";
-    var phone = data.phone || data.groupPhone || "";
-
-    // Handle File Upload to Google Drive
-    var fileUrl = data.description || "";
-    if (data.fileData && data.fileName) {
-      try {
-        var folderName = "SYNTHEX 2026 Submissions";
-        var folders = DriveApp.getFoldersByName(folderName);
-        var targetFolder = folders.hasNext() ? folders.next() : DriveApp.createFolder(folderName);
-
-        var contentType = data.fileType || "application/octet-stream";
-        var base64Data = data.fileData;
-        if (base64Data.indexOf("base64,") > -1) {
-          base64Data = base64Data.split("base64,")[1];
-        }
-
-        var decoded = Utilities.base64Decode(base64Data);
-        var safeFileName = id + "_" + data.fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
-        var blob = Utilities.newBlob(decoded, contentType, safeFileName);
-        var createdFile = targetFolder.createFile(blob);
-
-        // Make file accessible to anyone with the link
-        try {
-          createdFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-        } catch (shareErr) {
-          // Keep existing Drive permissions if domain restricts public sharing
-        }
-
-        fileUrl = createdFile.getUrl();
-      } catch (driveErr) {
-        fileUrl = (data.fileName || "File Uploaded") + " (Drive upload notice: " + driveErr.message + ")";
-      }
-    }
-
-    // Append submission row
-    sheet.appendRow([
-      timestamp,
-      id,
-      subType,
-      batch,
-      regDetails,
-      presenterName,
-      topic,
-      fileUrl,
-      email,
-      phone
-    ]);
-
-    // Format new row styling
-    var lastRow = sheet.getLastRow();
-    var rowRange = sheet.getRange(lastRow, 1, 1, 10);
-    rowRange.setVerticalAlignment("middle");
-    
-    // Auto-fit column widths reasonably
-    if (lastRow <= 2) {
-      for (var c = 1; c <= 10; c++) {
-        sheet.autoResizeColumn(c);
-      }
-    }
-
-    return ContentService
-      .createTextOutput(JSON.stringify({ 
-        status: "success", 
-        id: id, 
-        fileUrl: fileUrl,
-        message: "Submission successfully recorded in Google Sheets." 
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
-
-  } catch (error) {
-    return ContentService
-      .createTextOutput(JSON.stringify({ 
-        status: "error", 
-        message: error.toString() 
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
+    var details = s.members.map(function (member, i) {
+      return (i + 1) + '. ' + member.regNo + ' - ' + member.fullName + (i === 0 ? ' (Lead)' : '');
+    }).join('\n');
+    var row = [s.timestamp, s.id, s.submissionType === 'group' ? 'Group Submission' : 'Individual Submission',
+      s.batch, details, s.members[0].fullName, s.topic, 'concept-papers/' + s.filePath, s.email, s.phone || ''];
+    sheet.appendRow(row.map(sheetText_));
+    SpreadsheetApp.flush();
+    return json_({ success: true, id: s.id });
+  } catch (_) {
+    return json_({ success: false, error: 'Sheets synchronization failed; retry later.' });
+  } finally {
+    if (lock) lock.releaseLock();
   }
 }
-
-function doGet(e) {
-  return ContentService
-    .createTextOutput(JSON.stringify({ 
-      status: "active", 
-      message: "SYNTHEX 2026 Google Sheets webhook is active and ready to receive submissions." 
-    }))
-    .setMimeType(ContentService.MimeType.JSON);
+function doGet() {
+  return json_({ success: false, error: 'Server-to-server POST endpoint only.' });
+}
+function json_(value) {
+  return ContentService.createTextOutput(JSON.stringify(value)).setMimeType(ContentService.MimeType.JSON);
+}
+function safeEqual_(expected, actual) {
+  if (typeof actual !== 'string') return false;
+  var a = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, expected);
+  var b = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, actual);
+  var difference = 0;
+  for (var i = 0; i < a.length; i++) difference |= a[i] ^ b[i];
+  return difference === 0;
+}
+function sheetText_(value) {
+  var text = value == null ? '' : String(value);
+  return /^[\s\u0000-\u001f]*[=+@-]/.test(text) ? "'" + text : text;
 }

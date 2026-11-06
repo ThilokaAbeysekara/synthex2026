@@ -3,8 +3,9 @@ import { createSubmissionHandler } from "./handler.mjs";
 
 const url = Deno.env.get("SUPABASE_URL");
 const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-const origins = (Deno.env.get("ALLOWED_ORIGINS") || "").split(",").map(s => s.trim()).filter(Boolean);
+const origins = (Deno.env.get("ALLOWED_ORIGINS") || Deno.env.get("ALLOWED_ORIGIN") || "").split(",").map(s => s.trim()).filter(Boolean);
 const client = url && key ? createClient(url, key, {
   auth: { persistSession: false, autoRefreshToken: false }
 }) : null;
-Deno.serve(createSubmissionHandler({ client, origins, rateSalt: Deno.env.get("RATE_LIMIT_SALT") || key }));
+Deno.serve(createSubmissionHandler({ client, origins, rateSalt: Deno.env.get("RATE_LIMIT_SALT") || key,
+  sheets: { url: Deno.env.get("SHEETS_WEBHOOK_URL") || Deno.env.get("GOOGLE_SHEET_WEBHOOK_URL") || Deno.env.get("APPS_SCRIPT_URL"), secret: Deno.env.get("SHEETS_SYNC_SECRET") } }));

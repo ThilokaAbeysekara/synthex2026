@@ -6,46 +6,11 @@
  * ==========================================================================
  */
 
-<<<<<<< HEAD
-// Configuration & Default Endpoints
-const CONFIG = {
-  // =========================================================================
-  // SUBMISSION STATUS TOGGLE (Option A)
-  // Set to true to OPEN submissions across the platform.
-  // Set to false to CLOSE submissions, lock the form, and show closed notices.
-  // =========================================================================
-  submissionsOpen: true,
-
-  // Google Apps Script Web App URL (Recommended for Google Sheets + Drive uploads)
-  // You can paste your deployed Web App URL here or configure it via the on-site Settings modal.
-  appsScriptUrl: "",
-
-  // Pre-configured Google Form response endpoint & unified entry mapping (Fallback)
-  googleForm: {
-    viewUrl: "https://docs.google.com/forms/d/e/1FAIpQLScD6u8ZjARToVR_nfJev-ZMqbMspLc26ztLPTk9jkQNrdYk8w/viewform?usp=header",
-    endpoint: "https://docs.google.com/forms/d/e/1FAIpQLScD6u8ZjARToVR_nfJev-ZMqbMspLc26ztLPTk9jkQNrdYk8w/formResponse",
-    entries: {
-      submissionType: "entry.1807794449",
-      batch: "entry.2122323594",
-      regAndNames: "entry.1568231834",
-      topic: "entry.2007979790",
-      description: "entry.931518053",
-      email: "entry.1592693011",
-      phone: "entry.372663994"
-    },
-    pageHistory: "0"
-  },
-  // Custom Google Apps Script Web App URL (stored in localStorage)
-  customScriptUrlKey: "synthex_custom_script_url",
-  localSubmissionsKey: "synthex_submissions_backup"
-};
-=======
 // Submission data is sent only to Supabase. Public config is built from env.
-const CONFIG = { submissionsOpen: true, maxFileSize: 5 * 1024 * 1024,
+const CONFIG = { submissionsOpen: true, maxFileSize: 10 * 1024 * 1024,
   minGroupMembers: 2, maxGroupMembers: 6 };
 let submissionInFlight = false;
 let pendingSubmission = null;
->>>>>>> 5ee7a66 (updated)
 
 // State
 let selectedSubmissionType = "individual"; // "individual" | "group"
@@ -812,7 +777,7 @@ function initBulbInteractions() {
         }, 600);
       } else {
         // On homepage: navigate to dedicated submit page
-        window.location.href = "https://script.google.com/macros/s/AKfycbx8hf2RsWlm1TvlpXTmVItXvMeuadtkoHi24U8A7SSMY6LYNSCL2tiA1GeICtu2aFfA/exec";
+        window.location.href = "submit.html";
       }
     });
   }
@@ -915,51 +880,8 @@ async function handleFormSubmit(e) {
   btnSpinner.style.display = "inline-block";
   btnLabel.textContent = "Processing...";
 
-  // 4. Read File to Base64 (if uploaded) for Google Drive storage
-  let fileData = null;
-  let fileName = "";
-  let fileType = "";
-
-  if (fileElem && fileElem.files && fileElem.files[0]) {
-    const file = fileElem.files[0];
-    fileName = file.name;
-    fileType = file.type || "application/octet-stream";
-    try {
-      fileData = await readFileAsBase64(file);
-    } catch (readErr) {
-      console.warn("Could not read file as Base64:", readErr);
-    }
-  }
-
-  const regNoVal = selectedSubmissionType === "individual" && document.getElementById("regNo") ? document.getElementById("regNo").value.trim() : "";
-  const fullNameVal = selectedSubmissionType === "individual" && document.getElementById("fullName") ? document.getElementById("fullName").value.trim() : "";
-
-  const submissionPayload = {
-    id: "SYNTHEX-" + Date.now().toString(36).toUpperCase(),
-    timestamp: new Date().toISOString(),
-    submissionType: selectedSubmissionType,
-    submissionTypeTitle,
-    batch,
-    regNo: regNoVal,
-    fullName: fullNameVal,
-    groupMembers: selectedSubmissionType === "group" ? regAndNames : "",
-    regAndNames,
-    participantSummary,
-    topic,
-    description: fileName || description,
-    fileName,
-    fileType,
-    fileData,
-    email,
-    phone
-  };
-
   try {
-<<<<<<< HEAD
-    // 1. Submit to Google Sheets (Direct Apps Script Webhook or Google Form fallback)
-    await transmitToGoogleSheets(submissionPayload);
-=======
-    const { validateSubmission, validatePdf } = await import('./submission-validation.mjs');
+    const { validateSubmission, validateConceptPaper } = await import('./submission-validation.mjs');
     const members = selectedSubmissionType === 'individual'
       ? [{ regNo: document.getElementById('regNo').value, fullName: document.getElementById('fullName').value }]
       : Array.from(document.querySelectorAll('#members-table-body .member-row'), row => ({
@@ -967,7 +889,7 @@ async function handleFormSubmit(e) {
         }));
     const data = validateSubmission({ submissionType: selectedSubmissionType, batch, topic, email, phone, members });
     const file = fileElem?.files?.[0];
-    await validatePdf(file);
+    await validateConceptPaper(file);
     // Reuse the request token when retrying the same payload after a lost response.
     const digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer());
     const fingerprint = JSON.stringify(data) + Array.from(new Uint8Array(digest), n => n.toString(16).padStart(2, '0')).join('');
@@ -976,8 +898,7 @@ async function handleFormSubmit(e) {
     }
     const result = await transmitToSupabase(data, file, pendingSubmission.token);
     pendingSubmission = null;
-    showSuccessModal({ ...data, id: result.id, submissionTypeTitle, participantSummary });
->>>>>>> 5ee7a66 (updated)
+    showSuccessModal({ ...data, id: result.id, syncStatus: result.syncStatus, submissionTypeTitle, participantSummary });
 
     // 5. Reset Form & Dynamic Member Table
     form.reset();
@@ -1000,13 +921,7 @@ async function handleFormSubmit(e) {
 
   } catch (error) {
     console.error("Submission transmission error:", error);
-<<<<<<< HEAD
-    // Still save locally so no participant work is lost
-    saveSubmissionLocally(submissionPayload);
-    showAlert("Transmission Notice: Could not sync directly to Google Sheets (" + (error.message || "Network Error") + "). Your submission has been saved safely in your browser local backup. Please check your Google Apps Script Web App settings.", "error");
-=======
     showAlert(error.message || 'Submission failed. Your form is unchanged; please try again.', 'error');
->>>>>>> 5ee7a66 (updated)
   } finally {
     submissionInFlight = false;
     form.removeAttribute('aria-busy');
@@ -1016,68 +931,6 @@ async function handleFormSubmit(e) {
   }
 }
 
-<<<<<<< HEAD
-/**
- * Helper to read File as Base64 Data URL for Google Drive storage
- */
-function readFileAsBase64(file) {
-  return new Promise((resolve, reject) => {
-    if (!file) return resolve(null);
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = error => reject(error);
-    reader.readAsDataURL(file);
-  });
-}
-
-/**
- * Transmits the research idea to Google Sheets
- * Uses direct Google Apps Script Webhook if configured, or falls back to Google Form endpoint
- */
-async function transmitToGoogleSheets(data) {
-  const customUrl = localStorage.getItem(CONFIG.customScriptUrlKey) || CONFIG.appsScriptUrl;
-
-  if (customUrl && customUrl.trim().startsWith("http")) {
-    const targetUrl = customUrl.trim();
-    // Using text/plain avoids CORS preflight OPTIONS to Google Apps Script
-    const response = await fetch(targetUrl, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify(data)
-    });
-    return response;
-  } else {
-    const formUrl = CONFIG.googleForm.endpoint;
-    const formData = new URLSearchParams();
-    
-    // Parameters for Google Form submission
-    formData.append("fvv", "1");
-    formData.append("pageHistory", CONFIG.googleForm.pageHistory);
-    formData.append(CONFIG.googleForm.entries.submissionType, data.submissionTypeTitle);
-    formData.append(CONFIG.googleForm.entries.batch, data.batch);
-    formData.append(CONFIG.googleForm.entries.regAndNames, data.regAndNames);
-    formData.append(CONFIG.googleForm.entries.topic, data.topic);
-    formData.append(CONFIG.googleForm.entries.description, data.description || data.fileName || "");
-    formData.append(CONFIG.googleForm.entries.email, data.email);
-    if (data.phone) {
-      formData.append(CONFIG.googleForm.entries.phone, data.phone);
-    }
-
-    const response = await fetch(formUrl, {
-      method: "POST",
-      mode: "no-cors",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded"
-      },
-      body: formData.toString()
-    });
-    return response;
-  }
-}
-
-=======
->>>>>>> 5ee7a66 (updated)
 function showAlert(message, type) {
   const alertBox = document.getElementById("form-alert");
   if (!alertBox) return;
@@ -1115,6 +968,10 @@ function showSuccessModal(data) {
   if (emailEl) emailEl.textContent = data.email || "-";
   if (idEl) idEl.textContent = data.id || "-";
 
+  const syncMessage = document.getElementById('receipt-sync-status');
+  if (syncMessage) syncMessage.textContent = data.syncStatus === 'synced'
+    ? 'Registration saved successfully and synchronized with Google Sheets.'
+    : 'Registration saved successfully. Google Sheets synchronization is pending; please do not submit again.';
   modal.style.display = "flex";
   triggerConfetti();
 }
@@ -1201,133 +1058,6 @@ function triggerConfetti() {
 
 // Keep the original settings icon and modal structure without a login screen.
 function initSettings() {
-<<<<<<< HEAD
-  const openBtn = document.getElementById("open-config-btn");
-  const closeBtn = document.getElementById("close-config-btn");
-  const saveBtn = document.getElementById("save-config-btn");
-  const modal = document.getElementById("config-modal");
-  const input = document.getElementById("custom-script-url");
-  const exportBtn = document.getElementById("export-csv-btn");
-  const testBtn = document.getElementById("test-connection-btn");
-  const testResult = document.getElementById("test-connection-result");
-
-  function refreshModalState() {
-    const currentUrl = localStorage.getItem(CONFIG.customScriptUrlKey) || CONFIG.appsScriptUrl;
-    const statusTitle = document.getElementById("config-status-title");
-    const statusDesc = document.getElementById("config-status-desc");
-    const statusBadge = document.getElementById("config-status-badge");
-    const liveDot = document.getElementById("config-live-dot");
-
-    if (input) {
-      input.value = localStorage.getItem(CONFIG.customScriptUrlKey) || CONFIG.appsScriptUrl || "";
-    }
-
-    if (currentUrl && currentUrl.trim().startsWith("http")) {
-      if (statusBadge) {
-        statusBadge.textContent = "CONNECTED";
-        statusBadge.style.background = "var(--accent-green)";
-        statusBadge.style.color = "var(--text-dark)";
-      }
-      if (statusTitle) statusTitle.textContent = "Apps Script Webhook Active";
-      if (statusDesc) statusDesc.textContent = "Connected: " + currentUrl.slice(0, 45) + "...";
-      if (liveDot) {
-        liveDot.style.background = "var(--accent-green)";
-        liveDot.style.boxShadow = "0 0 10px var(--accent-green)";
-      }
-    } else {
-      if (statusBadge) {
-        statusBadge.textContent = "SETUP NEEDED";
-        statusBadge.style.background = "#f59e0b";
-        statusBadge.style.color = "#000";
-      }
-      if (statusTitle) statusTitle.textContent = "Google Sheets Webhook Not Set";
-      if (statusDesc) statusDesc.textContent = "Deploy google-apps-script.js & paste the Web App URL below";
-      if (liveDot) {
-        liveDot.style.background = "#f59e0b";
-        liveDot.style.boxShadow = "0 0 10px #f59e0b";
-      }
-    }
-  }
-
-  if (openBtn && modal) {
-    openBtn.addEventListener("click", () => {
-      refreshModalState();
-      updateBackupCounter();
-      if (testResult) testResult.style.display = "none";
-      modal.style.display = "flex";
-    });
-  }
-
-  if (testBtn) {
-    testBtn.addEventListener("click", async () => {
-      const urlToTest = input ? input.value.trim() : "";
-      if (!urlToTest || !urlToTest.startsWith("http")) {
-        if (testResult) {
-          testResult.style.display = "block";
-          testResult.style.color = "#f43f5e";
-          testResult.textContent = "Please enter a valid Google Apps Script Web App URL first.";
-        }
-        return;
-      }
-
-      testBtn.disabled = true;
-      testBtn.textContent = "Testing...";
-      if (testResult) {
-        testResult.style.display = "block";
-        testResult.style.color = "#38bdf8";
-        testResult.textContent = "Testing connection to Google Apps Script...";
-      }
-
-      try {
-        await fetch(urlToTest, { mode: "no-cors" });
-        if (testResult) {
-          testResult.style.color = "#00ff87";
-          testResult.textContent = "✓ Webhook endpoint is reachable! Click 'Save Settings' to activate.";
-        }
-      } catch (err) {
-        if (testResult) {
-          testResult.style.color = "#f43f5e";
-          testResult.textContent = "Could not reach endpoint: " + err.message;
-        }
-      } finally {
-        testBtn.disabled = false;
-        testBtn.textContent = "Test Connection";
-      }
-    });
-  }
-
-  if (closeBtn && modal) {
-    closeBtn.addEventListener("click", () => {
-      modal.style.display = "none";
-    });
-  }
-
-  if (modal) {
-    modal.addEventListener("click", (e) => {
-      if (e.target === modal) modal.style.display = "none";
-    });
-  }
-
-  if (saveBtn) {
-    saveBtn.addEventListener("click", () => {
-      if (input) {
-        const val = input.value.trim();
-        if (val) {
-          localStorage.setItem(CONFIG.customScriptUrlKey, val);
-        } else {
-          localStorage.removeItem(CONFIG.customScriptUrlKey);
-        }
-      }
-      refreshModalState();
-      modal.style.display = "none";
-    });
-  }
-
-  // Export submissions to CSV
-  if (exportBtn) {
-    exportBtn.addEventListener("click", exportSubmissionsToCSV);
-  }
-=======
   const modal = document.getElementById('config-modal');
   document.getElementById('open-config-btn')?.addEventListener('click', () => {
     if (modal) modal.style.display = 'flex';
@@ -1338,7 +1068,6 @@ function initSettings() {
   modal?.addEventListener('click', event => {
     if (event.target === modal) modal.style.display = 'none';
   });
->>>>>>> 5ee7a66 (updated)
 }
 
 async function transmitToSupabase(data, file, token) {
@@ -1349,59 +1078,12 @@ async function transmitToSupabase(data, file, token) {
   body.append('conceptPaper', file, file.name);
   let response;
   try {
-<<<<<<< HEAD
-    const submissions = JSON.parse(localStorage.getItem(CONFIG.localSubmissionsKey) || "[]");
-    if (submissions.length === 0) {
-      alert("No stored submissions to export yet.");
-      return;
-    }
-
-    const headers = [
-      "Reference ID", 
-      "Timestamp", 
-      "Submission Type", 
-      "Batch", 
-      "Registration & Member Details", 
-      "Presenter / Lead Name", 
-      "Topic of Idea", 
-      "Concept Paper / Description", 
-      "Email", 
-      "Contact Number"
-    ];
-
-    const rows = submissions.map(s => [
-      `"${s.id || ""}"`,
-      `"${s.timestamp || ""}"`,
-      `"${(s.submissionTypeTitle || s.submissionType || "").replace(/"/g, '""')}"`,
-      `"${(s.batch || "").replace(/"/g, '""')}"`,
-      `"${(s.regAndNames || s.regNo || "").replace(/"/g, '""')}"`,
-      `"${(s.participantSummary || s.fullName || "").replace(/"/g, '""')}"`,
-      `"${(s.topic || "").replace(/"/g, '""')}"`,
-      `"${(s.fileName || s.description || "").replace(/"/g, '""')}"`,
-      `"${(s.email || "").replace(/"/g, '""')}"`,
-      `"${(s.phone || "").replace(/"/g, '""')}"`
-    ]);
-
-    const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `SYNTHEX_2026_Ideas_Backup_${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  } catch (err) {
-    console.error("Export error:", err);
-=======
     response = await fetch(`${config.url}/functions/v1/submit-research`, {
       method: 'POST', headers: { apikey: config.publishableKey }, body,
       signal: AbortSignal.timeout(90000)
     });
   } catch {
     throw new Error('The server response was interrupted. Keep this page open and retry the same form to safely recover your confirmation.');
->>>>>>> 5ee7a66 (updated)
   }
   return window.synthexReadSubmissionResponse(response);
 }

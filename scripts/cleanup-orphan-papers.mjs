@@ -11,7 +11,7 @@ async function api(path, options = {}) {
 async function committedPaths() {
   const paths = new Set();
   for (let offset = 0; ; offset += 500) {
-    const rows = await api(`/rest/v1/research_submissions?select=file_path&order=id&limit=500&offset=${offset}`);
+    const rows = await api(`/rest/v1/synthex_submissions?select=file_path&order=id&limit=500&offset=${offset}`);
     rows.forEach(row => paths.add(row.file_path));
     if (rows.length < 500) return paths;
   }
@@ -33,10 +33,10 @@ async function list(prefix = '') {
   }
 }
 await list();
-console.log(`${candidates.length} unreferenced PDFs older than 24 hours.`);
+console.log(`${candidates.length} unreferenced documents older than 24 hours.`);
 for (const path of candidates) {
   // Recheck immediately before deleting; never delete a committed paper.
-  const current = await api(`/rest/v1/research_submissions?select=id&file_path=eq.${encodeURIComponent(path)}&limit=1`);
+  const current = await api(`/rest/v1/synthex_submissions?select=id&file_path=eq.${encodeURIComponent(path)}&limit=1`);
   if (current.length) continue;
   if (process.argv.includes('--apply')) {
     await api('/storage/v1/object/concept-papers', { method: 'DELETE', body: JSON.stringify({ prefixes: [path] }) });

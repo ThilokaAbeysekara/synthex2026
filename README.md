@@ -1,147 +1,165 @@
-# SYNTHEX 2026 submission portal
+# SYNTHEX 2026: Vercel registration + Supabase + Google Sheets
 
-The existing site is static HTML, CSS and browser JavaScript. Its public design, animations, navigation, individual/group fields, template downloads and confirmation receipt are preserved. Google submission endpoints and browser-local submission backups are no longer used. The legacy Apps Script file is retained as an archive of existing work and excluded from Vercel deployment; disable its old deployed webhook after cutover.
+The existing website is preserved. There is no new website, participant account, Google sign-in, Turnstile, or organizer login screen.
 
-## Architecture and schema
+Participants visit `index.html` and `submit.html` on the same Vercel domain. Every registration CTA (including About and the clickable bulb) opens local `submit.html`. Browser submissions go directly to Supabase Cloud. Google Apps Script receives only server-to-server synchronization requests; it never serves the registration UI. No CSS or JavaScript attempts to hide Google's banner.
 
-The build generates `public-config.js` from environment variables, containing **only the public project URL and publishable key**. The existing submission page loads that static script and sends multipart form data directly to the Supabase `submit-research` Edge Function. It makes no `/api/config` request, so a static preview or an API access restriction cannot break JSON configuration parsing. This bypasses Vercel's 4.5 MB function request limit, allowing PDFs up to **5 MiB (5,242,880 bytes)**. Participants do not need an account.
+## Files changed
 
-The migration in [supabase/migrations/202611070001_submission_portal.sql](supabase/migrations/202611070001_submission_portal.sql) creates:
-
-| Table | Purpose |
+| Files | Change |
 | --- | --- |
-| `research_submissions` | Full UUID-based `SYNTHEX-?` ID, timestamp, submission type, batch, topic, normalized contact email, optional phone, private PDF path/name/size and unique retry token. |
-| `submission_participants` | Ordered participants (first is lead), full names and normalized registration numbers. One participant for individual entries, 2?6 for groups. |
-| `portal_admins` | Organizer allowlist linked to Supabase Auth user IDs. Only an owner with SQL/dashboard access can manage membership. This security allowlist is retained; the website has no organizer login interface. |
-| `portal_settings` | Authoritative server-side submission open/closed switch. |
-| `portal_request_limits` | Short-lived salted hashes of gateway IP addresses and atomic request counters. |
+| [index.html](index.html), [about.html](about.html) | Replaced Apps Script registration links with `submit.html`; all other layout and styling retained. |
+| [submit.html](submit.html), [app.js](app.js) | Resolved committed merge-conflict markers, removed direct Google Forms/Apps Script and browser-local success fallbacks, preserved the original form/modals/confetti, restored 10 MB PDF/DOC/DOCX uploads, added Sheets sync status to confirmed receipts. |
+| [submission-validation.mjs](submission-validation.mjs) | Shared browser/server validation: individual or 2-6 members, existing batches, email, optional phone, duplicate registrations, file extension/MIME/signature/size checks. |
+| [vercel.json](vercel.json) | Runs `npm run build` and serves the existing root (`.`). Existing security headers and protected backend routes remain. |
+| [supabase/functions/submit-research/](supabase/functions/submit-research/) | Validates and stores documents privately, finalizes registrations transactionally, then attempts Sheets synchronization. |
+| [supabase/functions/_shared/sheets-sync.mjs](supabase/functions/_shared/sheets-sync.mjs), [supabase/functions/sync-sheets/](supabase/functions/sync-sheets/) | Secret-protected, durable, idempotent synchronization and retry worker. |
+| [supabase/migrations/202611070002_registration_sheets_bridge.sql](supabase/migrations/202611070002_registration_sheets_bridge.sql) | Preserves existing records while renaming the earlier table to `synthex_submissions`, increases limits to 10 MB, permits all three document types, and adds a private transactional synchronization queue. |
+| [google-apps-script.js](google-apps-script.js) | Server-only bridge for the existing spreadsheet. Verifies a shared secret, locks duplicate checking and appending, deduplicates by reference ID, and neutralizes spreadsheet formulas. |
+| [supabase/setup-sync-schedule.sql](supabase/setup-sync-schedule.sql), [scripts/cleanup-orphan-papers.mjs](scripts/cleanup-orphan-papers.mjs) | Hosted retry schedule and updated private-document maintenance. |
+| [tests/](tests/), [supabase/tests/](supabase/tests/) | Regression coverage for local links/assets, actual PostgreSQL migration/RLS/queue semantics, document formats, failures and the bridge. |
 
-One entry is allowed per contact email and per participant registration number across all individual and group submissions. Database unique constraints enforce this under concurrent requests; frontend checks alone cannot. Email case and registration case/whitespace are normalized. This policy prevents ordinary duplicate entries; it does not prove identity or ownership of an unverified email. Organizer intervention is required for corrections.
+The existing [styles.css](styles.css), fonts, images, guideline PDF and Word template were not changed. Existing `package.json` already defines the correct build script; Vercel now actually executes it. The generated public configuration mechanism in [scripts/build-config.cjs](scripts/build-config.cjs), [public-config.cjs](public-config.cjs), and [supabase-client.js](supabase-client.js) remains in use. No project credentials have been invented or hardcoded.
 
-The private `concept-papers` bucket permits only `application/pdf` and enforces the same 5 MiB size limit. No participant has direct database or Storage write permission. Only the Edge Function's service role writes. Authenticated organizers have read-only access; all other users are denied. Restrictive bucket policies also guard against broader pre-existing Storage policies. Review other existing application policies before applying to a shared project. Existing unknown tables are left untouched; legacy records are not automatically migrated.
+## Registration and privacy
 
-## Deploy Supabase first
+1. The Vercel build generates `public-config.js` containing only the public Supabase URL and publishable key. This generated file is ignored by Git. The form does not depend on a runtime `/api/config` request.
+2. `app.js` sends multipart data to `${SUPABASE_URL}/functions/v1/submit-research`. Documents go directly to Supabase, avoiding Vercel's function request-size limit.
+3. The Edge Function applies server-side rate limiting, required field/member checks, canonicalizes email/registration numbers, and validates the document before uploading it to private `concept-papers` Storage.
+4. A service-only database function verifies the object metadata and atomically commits `synthex_submissions`, `submission_participants`, and one `sheet_sync_jobs` entry. Unique email and participant-registration constraints prevent duplicate entries, including concurrent requests.
+5. Only then does the API return a database-generated full UUID reference (`SYNTHEX-...`). The success modal appears only after confirmation. A retry token recovers the original ID after a lost response; keep the page open when retrying an ambiguous result.
+6. Supabase attempts the Sheets webhook using a server-only secret. If confirmed, the response contains `syncStatus: "synced"`. Otherwise it returns `syncStatus: "pending"`, and the receipt explicitly states that the registration was saved and must not be resubmitted.
+7. A scheduled server-only worker retries queue entries with leases and exponential backoff. Google Sheets checks column B for the reference ID under a script lock, preventing duplicate rows even if a webhook response is lost.
 
-1. Create or select your own Supabase project. Back up any existing database. If `concept-papers` already exists, review its contents and existing access before migration: this migration makes it private.
-2. Run the migration **once**, either through Supabase SQL Editor or through the Supabase CLI. It is transactional and is not intended to be pasted repeatedly. With the CLI installed:
+The 10 MB limit is **10 MiB / 10,485,760 bytes**, consistently enforced by browser, Edge Function, Storage, and database. PDF headers, DOC compound-file headers/Word markers, and DOCX ZIP directories/Word parts are checked. Renamed unsupported documents and DOCX archives expanding beyond 50 MiB are rejected. These checks identify document types; they are not a malware scanner or a complete Office/PDF parser.
 
-   ```powershell
-   supabase login
-   supabase link --project-ref YOUR_PROJECT_REF
-   supabase db push
-   ```
+Storage remains private. There are no public file URLs or permanent signed links in Sheets. The spreadsheet stores the private object path in its existing concept-paper column. Authorized organizers view `synthex_submissions` and participants in the Supabase Dashboard, and download through Storage > `concept-papers` using their normal organization permissions. No login interface is added to the public site. Existing organizer allowlist/RLS protections remain enabled for any existing authenticated integrations. Anonymous clients cannot directly read or write tables, the queue, or private objects.
 
-   Review `db push` output before proceeding, particularly in a project with existing migration history. SQL Editor users should execute the exact migration file instead of `db push`.
+Server-side rate limiting allows 20 attempts per 15-minute hashed gateway-IP window. It fails closed if its database check fails. University networks sharing one IP may require an adjusted budget in `claim_portal_request`. CORS is an additional browser restriction, not authentication or a replacement for rate limiting.
 
-3. Configure Edge Function secrets in Supabase Dashboard > Edge Functions > Secrets:
+## 1. Configure Vercel
 
-   ```text
-   ALLOWED_ORIGINS=https://synthex2026.live,https://www.synthex2026.live
-   RATE_LIMIT_SALT=<a long randomly generated secret>
-   ```
+Use the **existing Vercel project**, domain and repository. Framework Preset: **Other**. Root Directory: repository root. Build Command: **`npm run build`**. Output Directory: **`.`**. These match the root-level HTML structure and are explicitly set in [vercel.json](vercel.json); do not configure `dist` or `public`.
 
-   Origins must match exactly, without trailing slashes. Add an exact Vercel Preview origin only when needed; preview origins are not automatically trusted. For local development add `http://localhost:3000`. Do not use `*`.
+Set these existing variables in Vercel Settings > Environment Variables for Production and any intended Preview environment:
 
-   Hosted Edge Functions provide `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` automatically. The function requires the service role and never falls back to the anonymous key. Keep that secret **only in Supabase's server environment**. The rate-limit salt is also server-only.
+| Variable | Value |
+| --- | --- |
+| `SUPABASE_URL` | Your actual `https://YOUR_PROJECT_REF.supabase.co` URL. |
+| `SUPABASE_PUBLISHABLE_KEY` | Your project's `sb_publishable_...` key or legacy `anon` JWT. |
 
-4. Deploy the function from this repository root:
+Do not put service-role keys, `sb_secret_...` keys, Sheets secrets, worker tokens or spreadsheet IDs in frontend configuration. The build refuses secret key types in the publishable-key field. [.env.example](.env.example) contains placeholders only. Redeploy after environment changes.
 
-   ```powershell
-   supabase functions deploy submit-research --project-ref YOUR_PROJECT_REF --no-verify-jwt
-   ```
-
-   The matching setting is in [supabase/config.toml](supabase/config.toml). Anonymous participants have no Auth JWT, and current publishable keys are not JWTs. Leaving gateway JWT verification enabled will block submissions. The function performs validation, exact-origin CORS checks, request-body limits and a database-backed budget of 20 attempts per 15-minute IP window. IP limits are an additional abuse control; shared university networks may need a higher budget configured in `claim_portal_request`. CORS does not authenticate clients, and public keys are not secrets.
-
-## View submissions without adding a login page to the website
-
-The public website has no participant or organizer login screen. Authorized organizers use the existing **Supabase Dashboard**: Table Editor > `research_submissions` and `submission_participants` to view entries, and Storage > `concept-papers` to download papers. Give organizers access through your Supabase organization's normal team access controls. The bucket remains private and the database RLS policies remain enabled. Do not make papers public to avoid signing in to the dashboard.
-
-The original settings icon stays on the submission page and opens a small submission-information panel, rather than a login interface. The original page layout, form, styles and animations are preserved.
-
-## Configure and deploy Vercel
-
-In the existing Vercel project, keep the current domain and repository. Set Framework Preset to **Other**, use the repository root, use **`npm run build`** as the Build Command (also set in `vercel.json`) and leave Output Directory unset (or use the root `.` if required by the dashboard). The build writes public configuration into a static script. The submission page no longer depends on a runtime configuration API.
-
-Set these variables in Vercel > Settings > Environment Variables for **Production** and any **Preview** environment you intend to use:
-
-```text
-SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
-SUPABASE_PUBLISHABLE_KEY=sb_publishable_YOUR_PROJECT_KEY
-```
-
-Use your actual project values from Supabase > Project Settings > API Keys. A legacy `anon` JWT key is also supported. **Never enter a service-role JWT or `sb_secret_?` key in the publishable-key variable.** Both the build and optional configuration API reject these secret key types. Do not add any service-role secret to Vercel; it is not needed there. [.env.example](.env.example) contains placeholders only.
-
-Redeploy after environment-variable changes. No Supabase credentials are assumed or hardcoded. The build fails with a clear configuration error if values are missing or a secret key was supplied. The generated script is ignored by Git. Vercel adds no-store configuration responses, anti-framing and MIME-sniffing protection. Deployment exclusions prevent shipping backend maintenance scripts, migrations, tests or the retired Apps Script.
-
-For local preview, copy `.env.example` to `.env` and fill in your own public values. Then run:
+The build loads a local `.env` when present. A plain static server works **after** the build has generated public config. For local development:
 
 ```powershell
+# Copy .env.example to .env and fill in only your public project values first.
+npm ci
 npm run build
 python -m http.server 8000
 ```
 
-Open `http://localhost:8000/submit.html` and add that exact origin to the Edge Function's `ALLOWED_ORIGINS`. The build loads `.env` with Node's built-in environment-file support. Only its URL and public key are written to the generated script; secrets are never serialized. You can also use `vercel dev`. Do not preview the submission API through a `file://` URL. A preview that blocks network access must be opened in a regular browser or hosted on Vercel.
+Open `http://localhost:8000/`. Add this exact origin to the Supabase allowlist when testing real submissions. Backend sources, tests, maintenance scripts and Apps Script are excluded from Vercel upload or protected by existing routes. Assets and root-level `app.js`, `styles.css`, `submission-validation.mjs`, images, `Guideline.pdf`, and `Research_Concept_Paper.docx` remain available.
 
-If the service returns plain text such as `Forbidden.` or an HTML gateway error, the form now checks the response safely and shows a readable error while keeping all entered data. An actual Supabase denial still requires checking the deployed function, `--no-verify-jwt` setting, and allowed origin; a denied request is never treated as a successful submission.
+## 2. Apply Supabase database changes
 
-<<<<<<< HEAD
-### Method 1: Dedicated Google Apps Script Webhook (Recommended & Reliable)
-This is the **most robust** method. It bypasses all Google Form login barriers, allows submissions from anyone without signing in, and **automatically uploads the Concept Paper (PDF/DOCX) into Google Drive** with a clickable link in your Google Sheet!
+Back up existing data and confirm your Supabase project before applying schema changes.
 
-1. Create a new Google Spreadsheet at [sheets.new](https://sheets.new) (or open your existing spreadsheet).
-2. Go to **Extensions** > **Apps Script**.
-3. Replace the code in the editor with the contents of [`google-apps-script.js`](google-apps-script.js).
-4. Click **Deploy** > **New deployment**.
-5. Select **Web app** (via the gear icon next to "Select type").
-6. Set:
-   - *Execute as*: **Me**
-   - *Who has access*: **Anyone** (⚠️ **Crucial**: Must be "Anyone", NOT "Only myself")
-7. Click **Deploy**, authorize permissions if prompted (Advanced -> Go to unsafe -> Allow).
-8. Copy the generated Web App URL (starts with `https://script.google.com/macros/s/.../exec`).
-9. On your SYNTHEX website, click the **Settings (Gear icon)** in the top navigation bar, paste your Web App URL, and click **Save Settings** (or paste it into `CONFIG.appsScriptUrl` in `app.js`).
+- New setup: apply [202611070001_submission_portal.sql](supabase/migrations/202611070001_submission_portal.sql), then [202611070002_registration_sheets_bridge.sql](supabase/migrations/202611070002_registration_sheets_bridge.sql).
+- If the first migration is already applied: apply **only the second**. Do not rerun the first migration.
+- The second migration renames `research_submissions` to `synthex_submissions`, preserving data, IDs, foreign keys and RLS. If both names already exist, it stops without deleting either table; reconcile the unknown existing schema before continuing.
 
----
-
-### Method 2: Why Direct Google Form Submissions Often Fail
-If you submit directly to Google Form endpoints from external websites:
-1. **Google Sign-in Requirement**: If the Google Form has "Limit to 1 response", "Restrict to users in [University] domain", or "Collect email addresses: Verified" enabled, Google blocks external POST requests with `HTTP 401 Unauthorized` and redirects to the Google Account login page.
-2. **File Upload Restrictions**: Google Forms NEVER permits anonymous or external submissions if the form has a "File Upload" question, because Google requires respondent authentication for Drive storage.
-3. **Fixing Google Form Direct Submission (Text Only)**:
-   - Open your form at [Google Forms Edit](https://docs.google.com/forms/d/17yshc-_WReK7hkJFw-Rja6fRgYTfuDDETcJBow-sPzI/edit).
-   - Go to **Settings > Responses**:
-     - Turn OFF **"Restrict to users in [Organization]"**
-     - Turn OFF **"Limit to 1 response"**
-     - Set **"Collect email addresses"** to **"Do not collect"**
-   - Note: File attachments cannot be transferred to Google Form via external POST; use Method 1 (Apps Script) for file uploads to Google Drive.
-=======
-## Failure handling and operations
-
-PDF validation checks required attachment, filename, declared MIME type, nonempty size, 5 MiB limit and `%PDF-x.y` header in both browser and Edge Function. This detects common accidental uploads and renamed documents; it is not a full PDF parser or malware scanner. Papers are managed through the existing Supabase Dashboard; no PDF viewer or login screen is added to the website.
->>>>>>> 5ee7a66 (updated)
-
-The function uploads an object with a random path, then calls a service-only PostgreSQL function. The function verifies the object metadata exists and commits the submission and all participant claims in one transaction. Failed transactions leave no incomplete submission records. Rejected uploads/transactions return errors; the browser preserves the form and does not celebrate a failure.
-
-A retry token is retained in page memory for the same normalized payload and file hash. Retrying after a lost response returns the original ID. Keep the page open after an ambiguous network error; reloading loses that token, but database uniqueness still prevents a second submission. Distinct concurrent attempts own separate objects, so cleanup cannot delete another attempt's committed paper.
-
-Storage and PostgreSQL cannot share a distributed transaction. The function retries object cleanup three times on known failures. If the database response is uncertain it checks the committed row before removing anything. A process crash or persistent Storage outage can leave an **unreferenced private object**, never an organizer-visible incomplete submission. Review Edge Function logs and run [scripts/cleanup-orphan-papers.mjs](scripts/cleanup-orphan-papers.mjs) periodically from a trusted maintenance machine. Set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in that process's environment only, then:
+Use SQL Editor in the above order or, with the Supabase CLI installed and matching migration history:
 
 ```powershell
-node scripts/cleanup-orphan-papers.mjs
-# Inspect the dry-run list first; this deletes only unreferenced objects older than 24 hours:
-node scripts/cleanup-orphan-papers.mjs --apply
+supabase login
+supabase link --project-ref YOUR_PROJECT_REF
+supabase db push
 ```
 
-The script fails closed on request errors and rechecks references before each removal. Do not delete objects directly with SQL because that bypasses Storage's object lifecycle. Back up database and Storage according to your retention requirements.
+Review the linked project and migration output. The resulting table stores type, batch, project topic, normalized email, optional phone, document path/name/size/MIME, request token and timestamp. Participants are ordered in `submission_participants`. `sheet_sync_jobs` is service-role-only and tracks status, attempts, next retry, lease, and confirmation time. Queue creation is part of the same transaction as registration.
 
-To close submissions, use the authoritative database switch:
+## 3. Update the existing Google Apps Script bridge
+
+Replace the code in the **existing Apps Script project** with [google-apps-script.js](google-apps-script.js). Keep the existing spreadsheet and its data. In Apps Script > Project Settings > Script Properties set:
+
+| Property | Value |
+| --- | --- |
+| `SHEETS_SYNC_SECRET` | A long random secret; identical to the Supabase secret below. |
+| `SPREADSHEET_ID` | The ID of your existing Google Spreadsheet. |
+| `SHEET_NAME` | Optional existing tab name; if unset the first tab is used. Set it when existing responses are not in the first tab. |
+
+The existing spreadsheet layout is retained: reference IDs are in **column B** and the bridge appends the same ten columns. The concept-paper column now holds a private Supabase path rather than a public Drive URL. If your spreadsheet has a different column order, adapt it before switching the bridge.
+
+Deploy > Manage deployments > Edit the existing Web App deployment > select a **new version** > Deploy. Execute as the owner, access **Anyone** so the Supabase server can call it; every POST still requires the shared secret. Copy the `/exec` URL to the server-only Supabase secret. Using a deployment URL that requires a Google user login will keep jobs pending.
+
+`doGet` serves only a JSON message. There is no registration page, no Drive copy, no public sharing and no direct browser-to-Apps-Script call. Google's Apps Script banner is avoided because participants never visit that host.
+
+## 4. Configure and deploy Supabase Edge Functions
+
+Set these secrets through Supabase Dashboard > Edge Functions > Secrets:
+
+| Secret | Value |
+| --- | --- |
+| `ALLOWED_ORIGINS` | `https://synthex2026.live,https://www.synthex2026.live` plus exact Preview/local origins you use, no trailing slashes or `*`. The legacy `ALLOWED_ORIGIN` name is also supported. |
+| `RATE_LIMIT_SALT` | A long random value for hashing IP rate-limit keys. |
+| `SHEETS_WEBHOOK_URL` | Existing Apps Script `/exec` URL. Existing `GOOGLE_SHEET_WEBHOOK_URL` or `APPS_SCRIPT_URL` aliases are also supported. |
+| `SHEETS_SYNC_SECRET` | Exactly matches the Apps Script property. |
+| `SYNC_WORKER_SECRET` | A separate long random value authenticating the retry worker. |
+
+Hosted Supabase supplies `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` automatically. Only the Edge Functions use the service role. Never configure it in Vercel or client JavaScript.
+
+From the repository root, deploy **both** functions:
+
+```powershell
+supabase functions deploy submit-research --project-ref YOUR_PROJECT_REF --no-verify-jwt
+supabase functions deploy sync-sheets --project-ref YOUR_PROJECT_REF --no-verify-jwt
+```
+
+The same JWT settings are in [supabase/config.toml](supabase/config.toml). Participants have no Auth JWT; modern publishable keys are not JWTs. The retry worker instead verifies `x-sync-worker-secret`. It is not a public administrative endpoint and must never be called from browser code.
+
+## 5. Enable automatic Sheets retries
+
+Enable Supabase Cron (`pg_cron`) and `pg_net` in the Dashboard. In **Vault**, create:
+
+- `synthex_project_url`: your actual Supabase project URL, without a trailing slash.
+- `synthex_sync_worker_secret`: the same value as Edge secret `SYNC_WORKER_SECRET`.
+
+Run [supabase/setup-sync-schedule.sql](supabase/setup-sync-schedule.sql) in hosted SQL Editor. It schedules the worker every minute and resolves secrets from Vault at execution time. The worker processes at most ten due jobs per call; a failed call's lease expires after two minutes and is recoverable. Monitor the queue and increase worker frequency/capacity if traffic outgrows this batch size.
+
+This follows Supabase's documented [Cron + pg_net + Vault scheduling approach](https://supabase.com/docs/guides/functions/schedule-functions). The schedule file is intentionally separate from the portable migrations because it requires hosted extensions and configured Vault values. Until configured, immediate synchronization is attempted but unattended retries cannot run.
+
+## Operations
+
+To close registrations authoritatively:
 
 ```sql
 update public.portal_settings set submissions_open = false where singleton;
 ```
 
-Also set `CONFIG.submissionsOpen` to false in [app.js](app.js) and redeploy to display the existing closed-state UX. URL preview flags affect appearance only and cannot override the server setting. Set both switches true to reopen.
+Also set `CONFIG.submissionsOpen` false in [app.js](app.js) and redeploy to show the original closed-state UI. URL preview switches affect appearance only and cannot override database closure.
 
-## Verification
+Storage and PostgreSQL cannot share a distributed transaction. Failed finalization rolls back the registration, participants, and sync job, and the Edge Function retries removal of its own uploaded object. An interrupted process can leave an unreferenced **private** object, not a confirmed incomplete registration. [scripts/cleanup-orphan-papers.mjs](scripts/cleanup-orphan-papers.mjs) identifies objects older than 24 hours with no database reference. Run it on a trusted maintenance machine with `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in that process's environment, inspect its dry run, then optionally apply:
+
+```powershell
+node scripts/cleanup-orphan-papers.mjs
+node scripts/cleanup-orphan-papers.mjs --apply
+```
+
+The cleanup tool rechecks references before deleting and stops on request errors. Never delete Storage rows with SQL.
+
+Queue monitoring (Dashboard SQL Editor):
+
+```sql
+select s.id, s.created_at, j.status, j.attempts, j.available_at, j.synced_at
+from public.synthex_submissions s
+join public.sheet_sync_jobs j on j.submission_id = s.id
+order by s.created_at desc;
+```
+
+For a due job stuck pending, check the bridge URL/deployment access, matching secrets, tab name and worker Cron logs. Only a matching `{ "success": true, "id": "SYNTHEX-..." }` webhook acknowledgment marks the job synced. HTML sign-in pages, false acknowledgments and lost responses remain retryable. The public form safely handles plain-text `Forbidden.` and HTML gateway errors without reporting false success.
+
+## Tests and local verification
 
 ```powershell
 npm ci
@@ -149,18 +167,37 @@ npm test
 npm run check
 ```
 
-Tests cover validation, 5 MiB boundaries, successful individual/group submissions, concurrent retries, duplicate participant/email claims, upload/database failures, ambiguous commits, cleanup retries, rate limiting, CORS and rejecting secret keys in public configuration. Backend-boundary tests simulate Supabase responses. PostgreSQL tests execute the real migration and RLS checks in PGlite against minimal Auth/Storage schema fixtures; they do not emulate Supabase's Storage HTTP service or JWT gateway.
+Automated tests run actual PostgreSQL migrations/RLS/queue SQL in PGlite with minimal Supabase-managed schema fixtures; registration SDK boundaries, Apps Script services and external HTTP calls are simulated. The bridge tests verify secret rejection, duplicate reference IDs, and spreadsheet formula protection. Signature tests cover PDF/DOC/DOCX, 10 MiB boundaries, and rejected renamed files. Registration tests cover all group sizes 2-6, field errors, races, rate limits, rollback and interrupted responses. Site tests cover local registration links, resources, merge markers and build configuration.
 
-Run [supabase/tests/portal-security.sql](supabase/tests/portal-security.sql) in an **isolated Supabase test project** after the migration as well. It rolls back its fixtures and verifies actual role privileges, organizer-only rows/files, no self-promotion, duplicate constraints, idempotency and transactional rollback. Use a test project so concurrent real submissions cannot interfere.
+For hosted database verification, run [supabase/tests/portal-security.sql](supabase/tests/portal-security.sql) and [supabase/tests/sync-queue.sql](supabase/tests/sync-queue.sql) in an isolated test project's SQL Editor after both migrations. Fixtures roll back. This checks real Supabase roles and queue transactions without contacting Sheets.
 
-Before production cutover, test the actual deployment:
+Local browser checks performed for this change: homepage CTA remains on the local host; individual PDF and six-member DOCX form flows display the returned reference IDs; the real downloadable Word template passes client validation; pending/synced receipt messages display correctly; mobile-width home/form layouts have no document overflow. Those form responses were mocked, not live cloud submissions.
 
-- Submit individual and group entries with real valid PDFs; save the confirmed IDs and verify the PDFs and participant rows in the Supabase Dashboard.
-- Accept a PDF at the exact size limit; reject one byte over, renamed text, DOCX, empty file, missing required fields and repeated group registrations.
-- Repeat an email and a participant registration with a different email; confirm rejection and no extra committed paper.
-- Interrupt the network after sending, then retry the unchanged form in the same page; confirm the same ID and one entry.
-- Confirm logged-out and non-organizer accounts cannot query submissions or read PDFs through REST/Storage, and public object URLs fail. Confirm authorized organizers can download through the Supabase Dashboard.
-- Close submissions in SQL and verify direct requests are rejected even with `?open=1`.
-- Confirm the Vercel Production origin and any explicitly allowed Preview origin work. Inspect both Vercel and Supabase logs for configuration, JWT, RLS and Storage errors.
+**No live Vercel deployment, Supabase Storage/database write, Google Sheets append or Cron run has been verified in this session.** These require the project's configured secrets, database migrations, deployed functions, bridge update and hosting deployment. Do not treat local tests as proof of production integration.
 
-Implementation can be tested locally without credentials; a live end-to-end Supabase/Storage/Vercel test requires your configured project, applied SQL, deployed function and authorized dashboard access. No production deployment or database changes are performed merely by editing this repository.
+## Verify the live deployment
+
+After completing the setup and Vercel deployment:
+
+1. Open `https://synthex2026.live/` and the About page on desktop and mobile. Check colors, fonts, animations, logos, navigation and footer. Click every registration CTA and bulb: the address must remain on your Vercel domain at `submit.html`, with no Apps Script page/banner.
+2. Open guidelines and download the Word template. In browser Network, confirm HTML/CSS/JS/images/fonts/documents load successfully; no browser request should go to Apps Script or Google Forms. Google Fonts requests remain intentional.
+3. Submit a valid individual entry and a 2-6 member group. Test real PDF, DOC and DOCX documents, including the exact size limit and one byte over. Confirm missing fields, invalid email, repeated member registration, unsupported files and oversize documents produce clear errors.
+4. Verify each receipt's reference ID exists in `synthex_submissions`, all members exist in `submission_participants`, and the correct file exists in the private `concept-papers` bucket. Confirm public/anonymous object reads fail.
+5. Find the same reference ID once in the existing Google Sheet, then check `sheet_sync_jobs.status = 'synced'`. If pending, wait for the scheduled worker and inspect its logs. Do not re-enter the registration to trigger a retry.
+6. Temporarily use a wrong bridge secret in a test environment: registration must still succeed with a pending-sync notice. Correct it, allow the job to become due, and verify Cron synchronizes it once. Repeated delivery of the same reference must not append duplicate rows.
+7. Repeat an email/registration and simulate an interrupted upload or database response in a test environment. Verify no extra confirmed records, no false success and safe retry with the same page/token.
+8. Confirm SQL closure rejects direct submissions even with `?open=1`, and restore the setting after testing.
+
+## Exact Git commands for this checkout
+
+This checkout is already paused in an interactive rebase of `main`, editing a commit. The remaining rebase item is an empty Vercel-trigger commit. The implementation did not alter Git history or push anything. To commit these fixes without amending/replacing the current commit message, finish that existing rebase, and attempt a normal push:
+
+```powershell
+git add --all
+git commit -m "fix: keep registration on Vercel and sync confirmed entries to Sheets"
+git -c core.editor=true rebase --continue
+git status
+git push origin main
+```
+
+If `rebase --continue` reports another conflict or an empty-commit decision, resolve that before pushing. A normal push may be rejected if the existing rebase rewrote already-published commits. Fetch and review the divergence before deciding how to update the shared branch; do not blindly force-push. Once a normal push is accepted, check the existing Vercel project's deployment logs: `npm run build` must complete and produce root `public-config.js` from your public environment values.

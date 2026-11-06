@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { validateSubmission, validatePdf, MAX_PDF_SIZE } from '../submission-validation.mjs';
+import { validateSubmission, validateConceptPaper, MAX_FILE_SIZE } from '../submission-validation.mjs';
 import { createSubmissionHandler } from '../supabase/functions/submit-research/handler.mjs';
+import { wordDoc, wordDocx } from './document-fixtures.mjs';
 
 const origin = 'https://synthex2026.live';
 const valid = () => ({ submissionType: 'individual', batch: '23/24', topic: 'Research proposal',
@@ -13,11 +14,12 @@ const token = () => crypto.randomUUID();
 // Simulates the SDK boundary, including database transactions, concurrent unique
 // constraints, lost responses, and storage failures. SQL policies are tested separately.
 function backend(options = {}) {
-  const state = { rows: [], objects: new Map(), uploads: 0, removals: 0, reads: 0 };
+  const state = { rows: [], objects: new Map(), uploads: 0, removals: 0, reads: 0, sheetStatus: new Map() };
   const client = {
     from(table) {
       const query = { select() { return query; }, eq(column, value) { query.column = column; query.value = value; return query; },
         async maybeSingle() {
+          if (table === 'sheet_sync_jobs') return { data: { status: state.sheetStatus.get(query.value) } };
           state.reads++;
           if (options.reconcileError && state.reads > 1) return { error: { code: 'NETWORK' } };
           return { data: state.rows.find(row => row[query.column] === query.value) || null };
@@ -28,6 +30,16 @@ function backend(options = {}) {
     },
     async rpc(name, args) {
       if (name === 'claim_portal_request') return { data: !options.rateLimited, error: options.rateError ? {} : null };
+      if (name === 'claim_sheet_sync') {
+        const row = state.rows.find(row => row.id === args.p_submission_id);
+        assert.ok(row, 'Sheets synchronization must run only AFTER a committed registration');
+        if (state.sheetStatus.get(row.id) === 'synced') return { data: null };
+        return { data: { leaseToken: token(), submission: { id: row.id, ...row.payload } } };
+      }
+      if (name === 'complete_sheet_sync') {
+        state.sheetStatus.set(args.p_id, args.p_success ? 'synced' : 'pending');
+        return { data: true };
+      }
       if (options.dbError) return { error: { code: options.dbError } };
       const existing = state.rows.find(row => row.request_token === args.p_token);
       if (existing) return { data: existing.id };
@@ -47,7 +59,7 @@ function backend(options = {}) {
       async remove(paths) { state.removals++; if (options.cleanupError) return { error: {} }; paths.forEach(path => state.objects.delete(path)); return {}; }
     }; } }
   };
-  return { state, handler: createSubmissionHandler({ client, origins: [origin], rateSalt: 'test-salt' }) };
+  return { state, handler: createSubmissionHandler({ client, origins: [origin], rateSalt: 'test-salt', sheets: options.sheets }) };
 }
 
 function request(payload = valid(), file = pdf(), requestToken = token(), requestOrigin = origin) {
@@ -85,14 +97,28 @@ for (const [name, change] of [
   });
 }
 
-test('PDF boundary permits 5 MB and rejects 5 MB + 1 byte', async () => {
-  await validatePdf(pdf(MAX_PDF_SIZE));
-  await assert.rejects(validatePdf(pdf(MAX_PDF_SIZE + 1)), /5 MB/);
+test('PDF boundary permits 10 MB and rejects 10 MB + 1 byte', async () => {
+  await validateConceptPaper(pdf(MAX_FILE_SIZE));
+  await assert.rejects(validateConceptPaper(pdf(MAX_FILE_SIZE + 1)), /10 MB/);
 });
-test('rejects renamed non-PDF, DOCX, empty file and missing attachment', async () => {
-  for (const file of [new File(['not a PDF'], 'renamed.pdf', { type: 'application/pdf' }), new File(['%PDF-1.7'], 'paper.docx'), pdf(9).slice(0, 0), null]) {
-    await assert.rejects(validatePdf(file));
+test('rejects renamed text, invalid DOCX, empty file and missing attachment', async () => {
+  for (const file of [new File(['not a PDF'], 'renamed.pdf', { type: 'application/pdf' }), new File(['renamed zip file'], 'paper.docx'), pdf(9).slice(0, 0), null]) {
+    await assert.rejects(validateConceptPaper(file));
   }
+});
+for (const [name, makeFile] of [['DOC', wordDoc], ['DOCX', wordDocx]]) {
+  test(`${name} upload is validated and committed with the correct extension and MIME`, async () => {
+    const file = makeFile();
+    const { state, handler } = backend();
+    assert.equal((await handler(request(valid(), file))).status, 200);
+    const [path, stored] = state.objects.entries().next().value;
+    assert.ok(path.endsWith(`.${name.toLowerCase()}`));
+    assert.equal(stored.type, file.type);
+  });
+}
+test('renamed ZIP and renamed OLE files are rejected', async () => {
+  await assert.rejects(validateConceptPaper(wordDocx(['unrelated.txt'])), /not a valid DOCX/);
+  await assert.rejects(validateConceptPaper(new File([new Uint8Array([0xd0,0xcf,0x11,0xe0,0xa1,0xb1,0x1a,0xe1])], 'fake.doc')), /not a valid DOC/);
 });
 test('individual success has one committed row and one private object', async () => {
   const { state, handler } = backend();
@@ -102,6 +128,32 @@ test('individual success has one committed row and one private object', async ()
   assert.equal(state.rows.length, 1);
   assert.equal(state.objects.size, 1);
 });
+test('registration pipeline synchronizes Sheets only after confirmed database/storage success', async () => {
+  let calls = 0;
+  const sheets = { url: 'https://script.google.com/macros/s/test/exec', secret: 'server-only', fetchImpl: async (_, options) => {
+    calls++;
+    return Response.json({ success: true, id: JSON.parse(options.body).submission.id });
+  } };
+  const { state, handler } = backend({ sheets });
+  const response = await handler(request());
+  assert.equal((await response.json()).syncStatus, 'synced');
+  assert.equal(state.rows.length, 1);
+  assert.equal(calls, 1);
+  const failed = backend({ sheets, dbError: 'XX000' });
+  assert.equal((await failed.handler(request())).status, 503);
+  assert.equal(calls, 1, 'failed registrations must never reach Sheets');
+});
+test('Sheets outage returns successful saved registration with pending synchronization', async () => {
+  const { state, handler } = backend({ sheets: { url: 'https://script.google.com/macros/s/test/exec', secret: 'server-only',
+    fetchImpl: async () => { throw new Error('Sheets offline'); } } });
+  const response = await handler(request());
+  assert.equal(response.status, 200);
+  const result = await response.json();
+  assert.equal(result.success, true);
+  assert.equal(result.syncStatus, 'pending');
+  assert.equal(state.objects.size, 1);
+  assert.equal(state.rows[0].id, result.id);
+});
 test('group submission retains all members', async () => {
   const { state, handler } = backend();
   const payload = valid(); payload.submissionType = 'group';
@@ -109,6 +161,15 @@ test('group submission retains all members', async () => {
   assert.equal((await handler(request(payload))).status, 200);
   assert.equal(state.rows[0].payload.members.length, 2);
 });
+for (const size of [3, 4, 5, 6]) {
+  test(`group registration with ${size} members succeeds`, async () => {
+    const { state, handler } = backend();
+    const payload = valid(); payload.submissionType = 'group';
+    payload.members = Array.from({ length: size }, (_, i) => ({ regNo: `REG00${i}`, fullName: `Member ${i}` }));
+    assert.equal((await handler(request(payload))).status, 200);
+    assert.equal(state.rows[0].payload.members.length, size);
+  });
+}
 test('upload failure never records a submission or reports success', async () => {
   const { state, handler } = backend({ uploadError: true });
   assert.equal((await handler(request())).status, 502);
@@ -183,7 +244,7 @@ test('CORS denies unknown origins and allows configured preflight', async () => 
 test('rejects malformed tokens and excessive request sizes', async () => {
   const { state, handler } = backend();
   assert.equal((await handler(request(valid(), pdf(), 'invalid'))).status, 400);
-  const oversized = request(); oversized.headers.set('content-length', String(6 * 1024 * 1024));
+  const oversized = request(); oversized.headers.set('content-length', String(11 * 1024 * 1024));
   assert.equal((await handler(oversized)).status, 400);
   assert.equal(state.uploads, 0);
 });

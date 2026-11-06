@@ -1,11 +1,12 @@
-import { MAX_PDF_SIZE, validateSubmission, validatePdf } from '../../../submission-validation.mjs';
+import { synchronizeSubmission } from '../_shared/sheets-sync.mjs';
+import { MAX_FILE_SIZE, validateSubmission, validateConceptPaper } from '../../../submission-validation.mjs';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const MAX_BODY = MAX_PDF_SIZE + 64 * 1024;
+const MAX_BODY = MAX_FILE_SIZE + 64 * 1024;
 
 async function boundedFormData(req) {
-  if (!req.body || Number(req.headers.get('content-length')) > MAX_BODY) throw new Error('Request exceeds the 5 MB PDF limit.');
-  if (!req.headers.get('content-type')?.startsWith('multipart/form-data;')) throw new Error('Expected a form with a PDF attachment.');
+  if (!req.body || Number(req.headers.get('content-length')) > MAX_BODY) throw new Error('Request exceeds the 10 MB document limit.');
+  if (!req.headers.get('content-type')?.startsWith('multipart/form-data;')) throw new Error('Expected a form with a concept paper attachment.');
   const reader = req.body.getReader();
   const chunks = [];
   let size = 0;
@@ -13,13 +14,13 @@ async function boundedFormData(req) {
     const { done, value } = await reader.read();
     if (done) break;
     size += value.byteLength;
-    if (size > MAX_BODY) { await reader.cancel(); throw new Error('Request exceeds the 5 MB PDF limit.'); }
+    if (size > MAX_BODY) { await reader.cancel(); throw new Error('Request exceeds the 10 MB document limit.'); }
     chunks.push(value);
   }
   return new Response(new Blob(chunks), { headers: { 'Content-Type': req.headers.get('content-type') } }).formData();
 }
 
-export function createSubmissionHandler({ client, origins, rateSalt }) {
+export function createSubmissionHandler({ client, origins, rateSalt, sheets = {} }) {
   return async req => {
     const origin = req.headers.get('origin');
     const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store',
@@ -31,7 +32,7 @@ export function createSubmissionHandler({ client, origins, rateSalt }) {
     if (origin && !origins.includes(origin)) return reply(403, { error: 'This website is not authorized to submit.' });
     if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers });
     if (req.method !== 'POST') return reply(405, { error: 'Method not allowed.' });
-    let token, file, payload;
+    let token, file, payload, document;
     try {
       // Supabase's gateway supplies this header. Rate limiting is an additional
       // abuse control, not authorization; database uniqueness remains authoritative.
@@ -49,42 +50,46 @@ export function createSubmissionHandler({ client, origins, rateSalt }) {
       try { payload = validateSubmission(JSON.parse(raw)); }
       catch (error) { throw new Error(error instanceof SyntaxError ? 'Invalid submission details.' : error.message); }
       file = form.get('conceptPaper');
-      await validatePdf(file);
+      document = await validateConceptPaper(file);
     } catch (error) {
       return reply(400, { error: error.message || 'Invalid submission.' });
     }
     try {
-      const existing = await client.from('research_submissions').select('id').eq('request_token', token).maybeSingle();
+      const existing = await client.from('synthex_submissions').select('id').eq('request_token', token).maybeSingle();
       if (existing.error) throw existing.error;
-      if (existing.data) return reply(200, { success: true, id: existing.data.id });
+      if (existing.data) {
+        const syncStatus = await synchronizeSubmission(client, existing.data.id, sheets);
+        return reply(200, { success: true, id: existing.data.id, syncStatus });
+      }
       const settings = await client.from('portal_settings').select('submissions_open').eq('singleton', true).single();
       if (settings.error) throw settings.error;
       if (!settings.data?.submissions_open) return reply(403, { error: 'Submissions are currently closed.' });
 
       // Every attempt owns a separate object. Concurrent retries cannot overwrite
       // or remove another attempt's successfully committed paper.
-      const path = `${token}/${crypto.randomUUID()}.pdf`;
+      const path = `${token}/${crypto.randomUUID()}.${document.extension}`;
       const upload = await client.storage.from('concept-papers').upload(path, file, {
-        contentType: 'application/pdf', upsert: false, cacheControl: '0'
+        contentType: document.mimeType, upsert: false, cacheControl: '0'
       });
       if (upload.error) {
         // A network failure can occur after Storage accepted the object.
         await cleanup(client, path);
-        return reply(502, { error: 'PDF upload failed. Your submission has not been confirmed. Please retry.' });
+        return reply(502, { error: 'Document upload failed. Your submission has not been confirmed. Please retry.' });
       }
       const saved = await client.rpc('finalize_research_submission', {
         p_token: token, p_payload: payload, p_path: path, p_filename: file.name, p_size: file.size
       });
       // Resolve ambiguous RPC failures before removing anything: the database
       // might have committed even when its HTTP response was interrupted.
-      const committed = await client.from('research_submissions').select('id,file_path').eq('request_token', token).maybeSingle();
+      const committed = await client.from('synthex_submissions').select('id,file_path').eq('request_token', token).maybeSingle();
       if (committed.error) {
         console.error('Submission outcome unknown; retain object for reconciliation', path);
         return reply(503, { error: 'Confirmation was interrupted. Keep this page open and retry the same form to recover your submission ID.' });
       }
       if (committed.data) {
         if (committed.data.file_path !== path) await cleanup(client, path);
-        return reply(200, { success: true, id: committed.data.id });
+        const syncStatus = await synchronizeSubmission(client, committed.data.id, sheets);
+        return reply(200, { success: true, id: committed.data.id, syncStatus });
       }
       await cleanup(client, path);
       if (saved.error?.code === '23505') return reply(409, { error: 'A submission already exists for this contact email or one of these registration numbers. Contact the organizers for changes.' });
@@ -107,5 +112,5 @@ async function cleanup(client, path) {
   }
   // No submission row is created. This inaccessible orphan can be removed by
   // the documented maintenance script after the reconciliation grace period.
-  console.error('Orphan PDF requires cleanup', path);
+  console.error('Orphan document requires cleanup', path);
 }
