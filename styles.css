@@ -569,7 +569,7 @@ body {
   background-clip: text;
   -webkit-text-fill-color: transparent;
   
-  filter: drop-shadow(0 0 35px rgba(0, 255, 135, 0.45));
+  /* filter: drop-shadow(0 0 35px rgba(0, 255, 135, 0.45)); */
   user-select: none;
 }
 
@@ -1233,7 +1233,7 @@ body {
 
 .form-control {
   width: 100%;
-  padding: 0.95rem 1.15rem 0.95rem 3rem;
+  padding: 0.95rem 2.8rem 0.95rem 3rem;
   font-family: var(--font-body);
   font-size: 1rem;
   color: var(--text-pure);
@@ -1254,9 +1254,65 @@ body {
   box-shadow: none;
 }
 
-.form-control:focus + .validation-badge,
 .input-wrapper:focus-within .input-icon {
   color: var(--accent-green);
+}
+
+.validation-badge {
+  position: absolute;
+  right: 1.15rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.form-group.has-success .validation-badge {
+  opacity: 1;
+  color: var(--accent-green, #00e676);
+}
+
+.form-group.has-error .validation-badge {
+  opacity: 1;
+  color: #f43f5e;
+}
+
+/* Inline Field Error Messages */
+.field-error-text {
+  display: none;
+  font-size: 0.8rem;
+  color: #ff5277;
+  margin-top: 6px;
+  line-height: 1.4;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  animation: errorSlideIn 0.22s ease-out;
+}
+
+.field-error-text svg {
+  flex-shrink: 0;
+  color: #ff5277;
+}
+
+.form-group.has-error > .field-error-text,
+.form-group.has-error .field-error-text {
+  display: flex;
+}
+
+@keyframes errorSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .form-textarea {
@@ -1270,6 +1326,16 @@ body {
 .form-group.has-error .form-control {
   border-color: #f43f5e;
   box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.18);
+}
+
+.form-group.has-error .batch-pills-container {
+  border-radius: 14px;
+  box-shadow: 0 0 0 2px rgba(244, 63, 94, 0.35);
+}
+
+.member-input.has-error {
+  border-color: #f43f5e !important;
+  box-shadow: 0 0 0 2px rgba(244, 63, 94, 0.25) !important;
 }
 
 .form-group.has-success .form-control {

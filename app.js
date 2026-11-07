@@ -272,6 +272,9 @@ function initSubmissionTypeToggle() {
       if (badgeEl) badgeEl.textContent = "Individual Participant Details";
       if (emailSubhint) emailSubhint.textContent = "";
 
+      // Clear any group errors
+      clearFieldError("groupMembers", false);
+
       // Sync lead from group table to individual if individual inputs are empty
       const tableBody = document.getElementById("members-table-body");
       if (tableBody) {
@@ -293,6 +296,10 @@ function initSubmissionTypeToggle() {
       if (panelGroup) panelGroup.style.display = "block";
       if (badgeEl) badgeEl.textContent = "Group Members Details";
       if (emailSubhint) emailSubhint.textContent = "(Primary Contact / Team Lead)";
+
+      // Clear any individual errors
+      clearFieldError("regNo", false);
+      clearFieldError("fullName", false);
 
       // Sync individual to lead in group table if row 1 is empty
       const regInput = document.getElementById("regNo");
@@ -454,6 +461,7 @@ function getGroupMembersData() {
 
   const rows = tableBody.querySelectorAll(".member-row");
   const lines = [];
+  const seenRegs = new Set();
 
   if (rows.length < MIN_GROUP_MEMBERS) {
     return { valid: false, message: "Group submission requires at least 2 team members.", compiled: "" };
@@ -469,7 +477,7 @@ function getGroupMembersData() {
 
     if (!reg) {
       if (regInput) {
-        regInput.style.borderColor = "#f43f5e";
+        regInput.classList.add("has-error");
         regInput.focus();
       }
       return {
@@ -479,9 +487,35 @@ function getGroupMembersData() {
       };
     }
 
-    if (!name) {
+    const normalizedReg = reg.toUpperCase().replace(/\s+/g, "");
+    if (!/^[A-Z0-9][A-Z0-9/._-]{1,49}$/.test(normalizedReg)) {
+      if (regInput) {
+        regInput.classList.add("has-error");
+        regInput.focus();
+      }
+      return {
+        valid: false,
+        message: `Invalid Registration Number for Member ${memberNum} (e.g., 22APP1234).`,
+        compiled: ""
+      };
+    }
+
+    if (seenRegs.has(normalizedReg)) {
+      if (regInput) {
+        regInput.classList.add("has-error");
+        regInput.focus();
+      }
+      return {
+        valid: false,
+        message: `Duplicate registration number (${normalizedReg}) found. Each member must have a unique registration number.`,
+        compiled: ""
+      };
+    }
+    seenRegs.add(normalizedReg);
+
+    if (!name || name.length < 2) {
       if (nameInput) {
-        nameInput.style.borderColor = "#f43f5e";
+        nameInput.classList.add("has-error");
         nameInput.focus();
       }
       return {
@@ -491,9 +525,12 @@ function getGroupMembersData() {
       };
     }
 
+    if (regInput) regInput.classList.remove("has-error");
+    if (nameInput) nameInput.classList.remove("has-error");
+
     // Format one line per member
     const leadTag = memberNum === 1 ? " (Team Lead)" : "";
-    lines.push(`${memberNum}. ${reg} - ${name}${leadTag}`);
+    lines.push(`${memberNum}. ${normalizedReg} - ${name}${leadTag}`);
   }
 
   const leadName = rows[0].querySelector(".member-name").value.trim();
@@ -536,7 +573,6 @@ function resetGroupMembersTable() {
 function initBatchPills() {
   const pills = document.querySelectorAll(".batch-pill");
   const nativeSelect = document.getElementById("batch");
-  const batchGroup = document.getElementById("group-batch");
 
   pills.forEach(pill => {
     pill.addEventListener("click", () => {
@@ -548,10 +584,7 @@ function initBatchPills() {
         nativeSelect.value = selectedBatch;
       }
 
-      if (batchGroup) {
-        batchGroup.classList.remove("has-error");
-        batchGroup.classList.add("has-success");
-      }
+      clearFieldError("batch", true);
     });
   });
 }
@@ -625,86 +658,56 @@ if (fileInput && fileWrapper) {
 
       if (!isPDF) {
         fileInput.value = "";
-
-        if (fileSelectedInfo) {
-          fileSelectedInfo.style.display = "none";
-        }
-
-        if (fileUploadLabel) {
-          fileUploadLabel.style.display = "flex";
-        }
-
+        if (fileSelectedInfo) fileSelectedInfo.style.display = "none";
+        if (fileUploadLabel) fileUploadLabel.style.display = "flex";
         fileWrapper.classList.remove("has-file");
-
-        showAlert(
-          "Only PDF files are allowed. Please upload a PDF document.",
-          "error"
-        );
-
+        setFieldError("conceptPaper", "Only PDF files are allowed. Please upload a PDF document.");
+        showAlert("Only PDF files are allowed. Please upload a PDF document.", "error");
         return;
       }
 
       // Maximum 10 MB
       if (file.size > CONFIG.maxFileSize) {
         fileInput.value = "";
-
-        if (fileSelectedInfo) {
-          fileSelectedInfo.style.display = "none";
-        }
-
-        if (fileUploadLabel) {
-          fileUploadLabel.style.display = "flex";
-        }
-
+        if (fileSelectedInfo) fileSelectedInfo.style.display = "none";
+        if (fileUploadLabel) fileUploadLabel.style.display = "flex";
         fileWrapper.classList.remove("has-file");
+        setFieldError("conceptPaper", "Your PDF must not exceed 10 MB.");
+        showAlert("Your PDF must not exceed 10 MB.", "error");
+        return;
+      }
 
-        showAlert(
-          "Your PDF must not exceed 10 MB.",
-          "error"
-        );
-
+      if (file.size < 8) {
+        fileInput.value = "";
+        if (fileSelectedInfo) fileSelectedInfo.style.display = "none";
+        if (fileUploadLabel) fileUploadLabel.style.display = "flex";
+        fileWrapper.classList.remove("has-file");
+        setFieldError("conceptPaper", "The uploaded file is empty or invalid.");
+        showAlert("The uploaded file is empty or invalid.", "error");
         return;
       }
 
       // Valid PDF selected
       showAlert("", "");
-
-      if (fileSelectedName) {
-        fileSelectedName.textContent = file.name;
-      }
-
-      if (fileSelectedInfo) {
-        fileSelectedInfo.style.display = "flex";
-      }
-
-      if (fileUploadLabel) {
-        fileUploadLabel.style.display = "none";
-      }
-
+      if (fileSelectedName) fileSelectedName.textContent = file.name;
+      if (fileSelectedInfo) fileSelectedInfo.style.display = "flex";
+      if (fileUploadLabel) fileUploadLabel.style.display = "none";
       fileWrapper.classList.add("has-file");
-
-      const group = document.getElementById("group-conceptPaper");
-
-      if (group) {
-        group.classList.remove("has-error");
-        group.classList.add("has-success");
-      }
+      clearFieldError("conceptPaper", true);
     }
   });
 
-
-    if (fileRemoveBtn) {
-      fileRemoveBtn.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        fileInput.value = "";
-        if (fileSelectedInfo) fileSelectedInfo.style.display = "none";
-        if (fileUploadLabel) fileUploadLabel.style.display = "flex";
-        fileWrapper.classList.remove("has-file");
-        const group = document.getElementById("group-conceptPaper");
-        if (group) group.classList.remove("has-success");
-      });
-    }
+  if (fileRemoveBtn) {
+    fileRemoveBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      fileInput.value = "";
+      if (fileSelectedInfo) fileSelectedInfo.style.display = "none";
+      if (fileUploadLabel) fileUploadLabel.style.display = "flex";
+      fileWrapper.classList.remove("has-file");
+      clearFieldError("conceptPaper", false);
+    });
+  }
 
     ["dragenter", "dragover"].forEach(evtName => {
       fileWrapper.addEventListener(evtName, (e) => {
@@ -743,33 +746,404 @@ if (fileInput && fileWrapper) {
     console.warn("Could not read URL query params:", err);
   }
 
-  // Real-time Field Validation feedback
-  const fields = ["regNo", "fullName", "topic", "description", "email", "phone"];
-
-  fields.forEach(fieldId => {
-    const input = document.getElementById(fieldId);
-    const group = document.getElementById(`group-${fieldId}`);
-    if (input && group) {
-      input.addEventListener("input", () => {
-        if (input.value.trim().length > 0) {
-          group.classList.remove("has-error");
-          group.classList.add("has-success");
-        } else {
-          group.classList.remove("has-success");
-        }
-      });
-      input.addEventListener("blur", () => {
-        if (input.hasAttribute("required") && input.value.trim().length === 0) {
-          group.classList.add("has-error");
-          group.classList.remove("has-success");
-        }
-      });
-    }
-  });
+  // Real-time Field Validation Setup
+  initFieldValidationHandlers();
 
   // Form Submit Handler
   if (form) {
     form.addEventListener("submit", handleFormSubmit);
+  }
+}
+
+/* ==========================================================================
+   FIELD VALIDATION SYSTEM
+   ========================================================================== */
+function setFieldError(fieldId, message) {
+  const group = document.getElementById(`group-${fieldId}`);
+  if (group) {
+    group.classList.add("has-error");
+    group.classList.remove("has-success");
+  }
+  const errorEl = document.getElementById(`error-${fieldId}`);
+  if (errorEl) {
+    const content = errorEl.querySelector(".error-msg-content");
+    if (content) content.textContent = message;
+    else errorEl.textContent = message;
+  }
+  const inputWrapper = group ? group.querySelector(".input-wrapper") : null;
+  const badge = inputWrapper ? inputWrapper.querySelector(".validation-badge") : null;
+  if (badge) {
+    badge.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
+  }
+}
+
+function clearFieldError(fieldId, markSuccess = true) {
+  const group = document.getElementById(`group-${fieldId}`);
+  if (group) {
+    group.classList.remove("has-error");
+    if (markSuccess) group.classList.add("has-success");
+    else group.classList.remove("has-success");
+  }
+  const inputWrapper = group ? group.querySelector(".input-wrapper") : null;
+  const badge = inputWrapper ? inputWrapper.querySelector(".validation-badge") : null;
+  if (badge) {
+    if (markSuccess) {
+      badge.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+    } else {
+      badge.innerHTML = "";
+    }
+  }
+}
+
+function validateBatch(showUi = true) {
+  const batch = selectedBatch || (document.getElementById("batch") ? document.getElementById("batch").value : "");
+  if (!batch) {
+    if (showUi) setFieldError("batch", "Please select your academic batch.");
+    return false;
+  }
+  clearFieldError("batch", true);
+  return true;
+}
+
+function validateRegNo(showUi = true) {
+  if (selectedSubmissionType !== "individual") return true;
+  const input = document.getElementById("regNo");
+  if (!input) return true;
+  const val = input.value.trim();
+  if (!val) {
+    if (showUi) setFieldError("regNo", "Registration number is required.");
+    return false;
+  }
+  const normalized = val.toUpperCase().replace(/\s+/g, "");
+  if (!/^[A-Z0-9][A-Z0-9/._-]{1,49}$/.test(normalized)) {
+    if (showUi) setFieldError("regNo", "Enter a valid registration number (e.g. 22APP1234).");
+    return false;
+  }
+  clearFieldError("regNo", true);
+  return true;
+}
+
+function validateFullName(showUi = true) {
+  if (selectedSubmissionType !== "individual") return true;
+  const input = document.getElementById("fullName");
+  if (!input) return true;
+  const val = input.value.trim();
+  if (!val) {
+    if (showUi) setFieldError("fullName", "Full name is required.");
+    return false;
+  }
+  if (val.length < 2) {
+    if (showUi) setFieldError("fullName", "Full name must be at least 2 characters.");
+    return false;
+  }
+  clearFieldError("fullName", true);
+  return true;
+}
+
+function validateGroupMembers(showUi = true) {
+  if (selectedSubmissionType !== "group") return true;
+  const tableBody = document.getElementById("members-table-body");
+  if (!tableBody) return false;
+  const rows = tableBody.querySelectorAll(".member-row");
+
+  if (rows.length < MIN_GROUP_MEMBERS) {
+    if (showUi) setFieldError("groupMembers", "Group submission requires at least 2 team members.");
+    return false;
+  }
+  if (rows.length > MAX_GROUP_MEMBERS) {
+    if (showUi) setFieldError("groupMembers", "Group submission allows at most 6 team members.");
+    return false;
+  }
+
+  const seenRegs = new Set();
+  let firstErrorMsg = "";
+  let hasError = false;
+
+  rows.forEach((row, idx) => {
+    const memberNum = idx + 1;
+    const regInput = row.querySelector(".member-reg");
+    const nameInput = row.querySelector(".member-name");
+    const reg = regInput ? regInput.value.trim() : "";
+    const name = nameInput ? nameInput.value.trim() : "";
+
+    let regErr = false;
+    let nameErr = false;
+
+    if (!reg) {
+      regErr = true;
+      if (!firstErrorMsg) firstErrorMsg = `Registration number required for Member ${memberNum}.`;
+    } else {
+      const normalized = reg.toUpperCase().replace(/\s+/g, "");
+      if (!/^[A-Z0-9][A-Z0-9/._-]{1,49}$/.test(normalized)) {
+        regErr = true;
+        if (!firstErrorMsg) firstErrorMsg = `Invalid registration number for Member ${memberNum} (e.g. 22APP1234).`;
+      } else if (seenRegs.has(normalized)) {
+        regErr = true;
+        if (!firstErrorMsg) firstErrorMsg = `Duplicate registration number (${normalized}) found in Member ${memberNum}.`;
+      } else {
+        seenRegs.add(normalized);
+      }
+    }
+
+    if (!name || name.length < 2) {
+      nameErr = true;
+      if (!firstErrorMsg) firstErrorMsg = `Full name required for Member ${memberNum}.`;
+    }
+
+    if (regInput) {
+      if (regErr && showUi) regInput.classList.add("has-error");
+      else if (!regErr) regInput.classList.remove("has-error");
+    }
+
+    if (nameInput) {
+      if (nameErr && showUi) nameInput.classList.add("has-error");
+      else if (!nameErr) nameInput.classList.remove("has-error");
+    }
+
+    if (regErr || nameErr) hasError = true;
+  });
+
+  if (hasError) {
+    if (showUi) setFieldError("groupMembers", firstErrorMsg);
+    return false;
+  }
+
+  clearFieldError("groupMembers", true);
+  return true;
+}
+
+function validateTopic(showUi = true) {
+  const input = document.getElementById("topic");
+  if (!input) return true;
+  const val = input.value.trim();
+  if (!val) {
+    if (showUi) setFieldError("topic", "Please enter the topic of your idea.");
+    return false;
+  }
+  if (val.length > 300) {
+    if (showUi) setFieldError("topic", "Topic must be at most 300 characters.");
+    return false;
+  }
+  clearFieldError("topic", true);
+  return true;
+}
+
+function validateConceptPaperFile(showUi = true) {
+  const input = document.getElementById("conceptPaper");
+  if (!input) return true;
+  const file = input.files && input.files[0];
+  if (!file) {
+    if (showUi) setFieldError("conceptPaper", "Please upload your concept paper in PDF format.");
+    return false;
+  }
+  const isPDF = file.name.toLowerCase().endsWith(".pdf") && (!file.type || file.type === "application/pdf");
+  if (!isPDF) {
+    if (showUi) setFieldError("conceptPaper", "Only PDF files are allowed. Please upload a PDF document.");
+    return false;
+  }
+  if (file.size > CONFIG.maxFileSize) {
+    if (showUi) setFieldError("conceptPaper", `File size exceeds the 10 MB limit (${(file.size / (1024 * 1024)).toFixed(1)} MB).`);
+    return false;
+  }
+  if (file.size < 8) {
+    if (showUi) setFieldError("conceptPaper", "The uploaded file is empty or corrupted.");
+    return false;
+  }
+  clearFieldError("conceptPaper", true);
+  return true;
+}
+
+function validateEmailField(showUi = true) {
+  const input = document.getElementById("email");
+  if (!input) return true;
+  const val = input.value.trim();
+  if (!val) {
+    if (showUi) setFieldError("email", "Email address is required.");
+    return false;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+    if (showUi) setFieldError("email", "Please enter a valid email address (e.g. perera@gmail.com).");
+    return false;
+  }
+  if (val.length > 254) {
+    if (showUi) setFieldError("email", "Email address is too long.");
+    return false;
+  }
+  clearFieldError("email", true);
+  return true;
+}
+
+function validatePhoneField(showUi = true) {
+  const input = document.getElementById("phone");
+  if (!input) return true;
+  const val = input.value.trim().replace(/\D/g, "");
+  if (!val) {
+    clearFieldError("phone", false);
+    return true;
+  }
+  if (!/^\d{10}$/.test(val)) {
+    if (showUi) setFieldError("phone", "Contact number must be exactly 10 digits (e.g. 0712345678).");
+    return false;
+  }
+  clearFieldError("phone", true);
+  return true;
+}
+
+function validateAllFormFields() {
+  let isAllValid = true;
+  let firstInvalidEl = null;
+
+  function runCheck(result, elId) {
+    if (!result) {
+      isAllValid = false;
+      if (!firstInvalidEl) {
+        firstInvalidEl = document.getElementById(elId) || document.getElementById(`group-${elId}`);
+      }
+    }
+  }
+
+  runCheck(validateBatch(true), "group-batch");
+
+  if (selectedSubmissionType === "individual") {
+    runCheck(validateRegNo(true), "regNo");
+    runCheck(validateFullName(true), "fullName");
+  } else {
+    runCheck(validateGroupMembers(true), "group-groupMembers");
+  }
+
+  runCheck(validateTopic(true), "topic");
+  runCheck(validateConceptPaperFile(true), "conceptPaper");
+  runCheck(validateEmailField(true), "email");
+  runCheck(validatePhoneField(true), "phone");
+
+  if (!isAllValid && firstInvalidEl) {
+    showAlert("Please correct the highlighted fields before submitting your idea.", "error");
+    firstInvalidEl.scrollIntoView({ behavior: "smooth", block: "center" });
+    const focusTarget = firstInvalidEl.querySelector("input:not([type=hidden]):not([disabled]), button") || firstInvalidEl;
+    if (focusTarget && typeof focusTarget.focus === "function") {
+      setTimeout(() => focusTarget.focus(), 300);
+    }
+  }
+
+  return isAllValid;
+}
+
+function initFieldValidationHandlers() {
+  // Individual Reg No (auto uppercase + live validation)
+  const regNo = document.getElementById("regNo");
+  if (regNo) {
+    regNo.addEventListener("input", () => {
+      const start = regNo.selectionStart;
+      const end = regNo.selectionEnd;
+      regNo.value = regNo.value.toUpperCase();
+      regNo.setSelectionRange(start, end);
+      const group = document.getElementById("group-regNo");
+      if (group && group.classList.contains("has-error")) {
+        validateRegNo(true);
+      } else if (regNo.value.trim().length > 0) {
+        validateRegNo(false);
+      } else {
+        clearFieldError("regNo", false);
+      }
+    });
+    regNo.addEventListener("blur", () => {
+      if (selectedSubmissionType === "individual") validateRegNo(true);
+    });
+  }
+
+  // Full Name
+  const fullName = document.getElementById("fullName");
+  if (fullName) {
+    fullName.addEventListener("input", () => {
+      const group = document.getElementById("group-fullName");
+      if (group && group.classList.contains("has-error")) {
+        validateFullName(true);
+      } else if (fullName.value.trim().length >= 2) {
+        validateFullName(false);
+      } else {
+        clearFieldError("fullName", false);
+      }
+    });
+    fullName.addEventListener("blur", () => {
+      if (selectedSubmissionType === "individual") validateFullName(true);
+    });
+  }
+
+  // Topic
+  const topic = document.getElementById("topic");
+  if (topic) {
+    topic.addEventListener("input", () => {
+      const group = document.getElementById("group-topic");
+      if (group && group.classList.contains("has-error")) {
+        validateTopic(true);
+      } else if (topic.value.trim().length > 0) {
+        validateTopic(false);
+      } else {
+        clearFieldError("topic", false);
+      }
+    });
+    topic.addEventListener("blur", () => validateTopic(true));
+  }
+
+  // Email
+  const email = document.getElementById("email");
+  if (email) {
+    email.addEventListener("input", () => {
+      const group = document.getElementById("group-email");
+      if (group && group.classList.contains("has-error")) {
+        validateEmailField(true);
+      } else if (email.value.trim().length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())) {
+        validateEmailField(false);
+      }
+    });
+    email.addEventListener("blur", () => validateEmailField(true));
+  }
+
+  // Phone (digits only, exactly 10 digits)
+  const phone = document.getElementById("phone");
+  if (phone) {
+    phone.addEventListener("input", () => {
+      // Restrict strictly to numbers and max 10 digits
+      phone.value = phone.value.replace(/\D/g, "").slice(0, 10);
+      const group = document.getElementById("group-phone");
+      if (group && group.classList.contains("has-error")) {
+        validatePhoneField(true);
+      } else if (phone.value.length === 10) {
+        validatePhoneField(false);
+      } else if (phone.value.length === 0) {
+        clearFieldError("phone", false);
+      }
+    });
+    phone.addEventListener("blur", () => {
+      if (phone.value.trim().length > 0) {
+        validatePhoneField(true);
+      } else {
+        clearFieldError("phone", false);
+      }
+    });
+  }
+
+  // Group Members Dynamic Table Listeners
+  const tableBody = document.getElementById("members-table-body");
+  if (tableBody) {
+    tableBody.addEventListener("input", (e) => {
+      const target = e.target;
+      if (target && target.classList.contains("member-input")) {
+        if (target.classList.contains("member-reg")) {
+          const start = target.selectionStart;
+          const end = target.selectionEnd;
+          target.value = target.value.toUpperCase();
+          target.setSelectionRange(start, end);
+        }
+        if (target.value.trim().length > 0) {
+          target.classList.remove("has-error");
+        }
+        const group = document.getElementById("group-groupMembers");
+        if (group && group.classList.contains("has-error")) {
+          validateGroupMembers(false);
+        }
+      }
+    });
   }
 }
 
@@ -863,74 +1237,36 @@ async function handleFormSubmit(e) {
   const btnLabel = document.getElementById("btn-label");
   const alertBox = document.getElementById("form-alert");
 
+  // 1. Comprehensive Field Validation
+  const isFormValid = validateAllFormFields();
+  if (!isFormValid) return;
+
   const batch = selectedBatch || (document.getElementById("batch") ? document.getElementById("batch").value : "");
-  let hasError = false;
-
-  function markError(id) {
-    const group = document.getElementById(id);
-    if (group) group.classList.add("has-error");
-    hasError = true;
-  }
-
-  // 1. Common Batch Validation
-  if (!batch) markError("group-batch");
-
-  // 2. Proposal Details Validation (Unified)
   const topic = document.getElementById("topic") ? document.getElementById("topic").value.trim() : "";
-  const descElem = document.getElementById("description");
   const fileElem = document.getElementById("conceptPaper");
-  const description = descElem ? descElem.value.trim() : (fileElem && fileElem.files && fileElem.files[0] ? fileElem.files[0].name : "");
   const email = document.getElementById("email") ? document.getElementById("email").value.trim() : "";
   const phone = document.getElementById("phone") ? document.getElementById("phone").value.trim() : "";
 
-  if (!topic) markError("group-topic");
-  if (descElem && !description) markError("group-description");
-  if (fileElem && (!fileElem.files || fileElem.files.length === 0)) markError("group-conceptPaper");
-  if (!email) {
-    markError("group-email");
-  } else if (!isValidEmail(email)) {
-    markError("group-email");
-    showAlert("Please enter a valid email address.", "error");
-    return;
-  }
-
-  // 3. Participant Details Validation
   let regAndNames = "";
   let participantSummary = "";
   let submissionTypeTitle = "";
 
   if (selectedSubmissionType === "individual") {
     submissionTypeTitle = "Individual Submission";
-    const regNo = document.getElementById("regNo").value.trim();
+    const regNo = document.getElementById("regNo").value.trim().toUpperCase().replace(/\s+/g, "");
     const fullName = document.getElementById("fullName").value.trim();
-
-    if (!regNo) markError("group-regNo");
-    if (!fullName) markError("group-fullName");
-
-    if (hasError) {
-      showAlert("Please fill in all required fields marked with an asterisk (*).", "error");
-      return;
-    }
-
     regAndNames = `1. ${regNo} - ${fullName}`;
     participantSummary = fullName;
-
   } else {
-    // Group Submission Branch - Dynamic Table Validation (Min 2, Max 6)
     submissionTypeTitle = "Group Submission";
     const membersData = getGroupMembersData();
     if (!membersData.valid) {
+      setFieldError("groupMembers", membersData.message);
       showAlert(membersData.message, "error");
       const groupContainer = document.getElementById("group-groupMembers");
       if (groupContainer) groupContainer.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
-
-    if (hasError) {
-      showAlert("Please fill in all required fields marked with an asterisk (*).", "error");
-      return;
-    }
-
     regAndNames = membersData.compiled;
     participantSummary = `${membersData.leadName} & Team (${membersData.count} Members)`;
   }
@@ -972,6 +1308,9 @@ async function handleFormSubmit(e) {
     selectedBatch = "";
     document.querySelectorAll(".form-group").forEach(g => {
       g.classList.remove("has-success", "has-error");
+    });
+    document.querySelectorAll(".validation-badge").forEach(b => {
+      b.innerHTML = "";
     });
     const c1 = document.getElementById("char-counter");
     if (c1) c1.textContent = "0 characters";

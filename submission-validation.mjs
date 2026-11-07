@@ -17,8 +17,9 @@ export function validateSubmission(input) {
   if (!BATCHES.includes(input.batch)) throw new Error('Select a valid batch.');
   const email = text(input.email, 'Email', 254).toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Enter a valid email address.');
-  const phone = text(input.phone ?? '', 'Contact number', 30, false);
-  if (phone && !/^\+?[\d\s().-]{7,30}$/.test(phone)) throw new Error('Enter a valid contact number.');
+  const rawPhone = text(input.phone ?? '', 'Contact number', 30, false).replace(/\D/g, '');
+  if (rawPhone && !/^\d{10}$/.test(rawPhone)) throw new Error('Contact number must be exactly 10 digits.');
+  const phone = rawPhone;
   const members = input.members;
   if (!Array.isArray(members) || (input.submissionType === 'individual' ? members.length !== 1 : members.length < 2 || members.length > 6)) {
     throw new Error('Individual entries need one participant; groups need 2 to 6 members.');
