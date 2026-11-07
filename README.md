@@ -161,6 +161,22 @@ For a due job stuck pending, check the bridge URL/deployment access, matching se
 
 ## Tests and local verification
 
+If a local preview reports that the server response was interrupted, first
+check the public configuration. `https://test.supabase.co` and
+`sb_publishable_test` are test fixtures, not a usable project. Both build-time
+and browser validation now reject these values before a registration request.
+Browser test routes must be removed after testing, including in an already open
+preview tab. A test response must never be used as evidence of a saved entry.
+
+For a real local submission, populate `.env` from `.env.example` with your actual
+public Supabase values and run `npm run build`. In the Supabase Edge Function's
+`ALLOWED_ORIGINS`, include the exact preview origin: `http://127.0.0.1:8000` and
+`http://localhost:8000` are distinct origins. Reload the page after building.
+Offline, timeout, invalid-configuration and failed-network cases now display
+different messages and keep the form unchanged. Allowed browser origins can
+receive the backend's JSON configuration error even if its service client is
+unavailable; the CORS preflight no longer masks that error.
+
 ```powershell
 npm ci
 npm test

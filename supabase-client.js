@@ -4,7 +4,7 @@ window.synthexConfig = async function () {
   if (!config?.url || !config?.publishableKey) {
     throw new Error('Submission service is not configured. Set SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY, then rebuild and redeploy the site.');
   }
-  return config;
+  return window.synthexValidatePublicConfig(config);
 };
 
 // Gateways can return plain text or HTML for denied/failed requests. Do not

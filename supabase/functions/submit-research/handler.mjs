@@ -28,9 +28,9 @@ export function createSubmissionHandler({ client, origins, rateSalt, sheets = {}
       'Access-Control-Allow-Headers': 'apikey, content-type', 'Access-Control-Max-Age': '600' };
     if (origin && origins.includes(origin)) headers['Access-Control-Allow-Origin'] = origin;
     const reply = (status, data) => new Response(JSON.stringify(data), { status, headers });
-    if (!client || !origins.length || !rateSalt) return reply(503, { error: 'Submission service is not configured. Please contact the organizers.' });
     if (origin && !origins.includes(origin)) return reply(403, { error: 'This website is not authorized to submit.' });
     if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers });
+    if (!client || !origins.length || !rateSalt) return reply(503, { error: 'Submission service is not configured. Please contact the organizers.' });
     if (req.method !== 'POST') return reply(405, { error: 'Method not allowed.' });
     let token, file, payload, document;
     try {

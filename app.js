@@ -1082,8 +1082,12 @@ async function transmitToSupabase(data, file, token) {
       method: 'POST', headers: { apikey: config.publishableKey }, body,
       signal: AbortSignal.timeout(90000)
     });
-  } catch {
-    throw new Error('The server response was interrupted. Keep this page open and retry the same form to safely recover your confirmation.');
+  } catch (error) {
+    if (error.name === 'TimeoutError' || error.name === 'AbortError') {
+      throw new Error('The submission request timed out. Keep this page open and retry the same form to recover your confirmation safely.');
+    }
+    if (navigator.onLine === false) throw new Error('You are offline. Reconnect and retry; your form has been kept.');
+    throw new Error(`Cannot reach the Supabase submission service. Check your connection and make sure the submit-research function is deployed with ${window.location.origin} in ALLOWED_ORIGINS. Your form has been kept; retry without reloading.`);
   }
   return window.synthexReadSubmissionResponse(response);
 }

@@ -241,6 +241,16 @@ test('CORS denies unknown origins and allows configured preflight', async () => 
   assert.equal(response.status, 204);
   assert.equal(response.headers.get('Access-Control-Allow-Origin'), origin);
 });
+test('allowed browser receives the actual configuration error instead of a failed preflight', async () => {
+  const handler = createSubmissionHandler({ client: null, origins: [origin], rateSalt: 'salt' });
+  const preflight = await handler(new Request('https://test', { method: 'OPTIONS', headers: { Origin: origin } }));
+  assert.equal(preflight.status, 204);
+  assert.equal(preflight.headers.get('Access-Control-Allow-Origin'), origin);
+  const response = await handler(request());
+  assert.equal(response.status, 503);
+  assert.equal(response.headers.get('Access-Control-Allow-Origin'), origin);
+  assert.match((await response.json()).error, /not configured/);
+});
 test('rejects malformed tokens and excessive request sizes', async () => {
   const { state, handler } = backend();
   assert.equal((await handler(request(valid(), pdf(), 'invalid'))).status, 400);
@@ -254,7 +264,7 @@ const configHandler = require('../api/config.js');
 test('public configuration never returns a service-role or secret key', () => {
   const old = { url: process.env.SUPABASE_URL, key: process.env.SUPABASE_PUBLISHABLE_KEY };
   try {
-    process.env.SUPABASE_URL = 'https://test.supabase.co';
+    process.env.SUPABASE_URL = 'https://abcdefghijklmnopqrst.supabase.co';
     for (const key of ['sb_secret_private', `e30.${Buffer.from(JSON.stringify({ role: 'service_role' })).toString('base64url')}.sig`]) {
       process.env.SUPABASE_PUBLISHABLE_KEY = key;
       const response = { setHeader() {}, status(code) { this.code = code; return this; }, json(data) { this.data = data; } };
@@ -262,7 +272,7 @@ test('public configuration never returns a service-role or secret key', () => {
       assert.equal(response.code, 503);
       assert.ok(!JSON.stringify(response.data).includes(key));
     }
-    process.env.SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_public';
+    process.env.SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_a1b2c3d4e5f6g7h8i9j0';
     const response = { setHeader() {}, status(code) { this.code = code; return this; }, json(data) { this.data = data; } };
     configHandler({}, response);
     assert.equal(response.code, 200);
