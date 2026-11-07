@@ -247,27 +247,6 @@ body {
   gap: 1rem;
 }
 
-.nav-icon-btn {
-  background: rgba(3, 14, 28, 0.7);
-  border: 1px solid var(--border-subtle);
-  color: var(--text-muted);
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: var(--transition-smooth);
-}
-
-.nav-icon-btn:hover {
-  color: var(--accent-green);
-  border-color: var(--accent-green);
-  background: rgba(0, 255, 135, 0.12);
-  box-shadow: 0 0 12px rgba(0, 255, 135, 0.25);
-}
-
 .status-pill {
   display: inline-flex;
   align-items: center;
@@ -1873,9 +1852,10 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1.5rem;
+  padding: 1.25rem 1rem;
   z-index: 10000;
   animation: fadeIn 0.3s ease;
+  overflow-y: auto;
 }
 
 @keyframes fadeIn {
@@ -1886,10 +1866,15 @@ body {
 .modal-card {
   background: var(--bg-secondary);
   border: 1px solid rgba(0, 255, 135, 0.35);
-  border-radius: 28px;
-  max-width: 540px;
+  border-radius: 20px;
+  max-width: 480px;
   width: 100%;
-  padding: 2.8rem 2.2rem;
+  margin: auto;
+  max-height: calc(100vh - 2.5rem);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 255, 135, 0.3) transparent;
+  padding: 1.6rem 1.6rem;
   text-align: center;
   box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), 0 0 40px rgba(0, 255, 135, 0.22);
   animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -1903,14 +1888,14 @@ body {
 
 /* Animated Checkmark */
 .success-icon-animated {
-  width: 76px;
-  height: 76px;
-  margin: 0 auto 1.5rem;
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 0.75rem;
 }
 
 .checkmark {
-  width: 76px;
-  height: 76px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
   display: block;
   stroke-width: 3.5;
@@ -1947,49 +1932,61 @@ body {
 
 .success-badge {
   display: inline-block;
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 700;
   color: var(--accent-green);
   letter-spacing: 0.12em;
   background: rgba(0, 255, 135, 0.12);
   border: 1px solid rgba(0, 255, 135, 0.3);
-  padding: 0.35rem 0.9rem;
+  padding: 0.25rem 0.75rem;
   border-radius: 999px;
-  margin-bottom: 0.85rem;
+  margin-bottom: 0.5rem;
 }
 
 .modal-title {
   font-family: var(--font-display);
-  font-size: 1.85rem;
+  font-size: 1.45rem;
   font-weight: 800;
   color: var(--text-pure);
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.4rem;
 }
 
 .modal-desc {
   color: var(--text-muted);
-  font-size: 0.98rem;
-  margin-bottom: 1.85rem;
-  line-height: 1.6;
+  font-size: 0.86rem;
+  margin-bottom: 0.85rem;
+  line-height: 1.45;
+}
+
+#receipt-sync-status {
+  margin-top: -0.25rem;
+  margin-bottom: 0.85rem;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  opacity: 0.95;
+}
+
+#receipt-sync-status:empty {
+  display: none;
 }
 
 .receipt-box {
   background: rgba(2, 10, 22, 0.85);
   border: 1px solid var(--border-subtle);
-  border-radius: 16px;
-  padding: 1.25rem 1.4rem;
+  border-radius: 12px;
+  padding: 0.8rem 1.1rem;
   text-align: left;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  margin-bottom: 2rem;
+  gap: 0.45rem;
+  margin-bottom: 1.1rem;
 }
 
 .receipt-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.9rem;
+  font-size: 0.82rem;
 }
 
 .receipt-key {
@@ -2007,10 +2004,10 @@ body {
 
 .modal-primary-btn {
   width: 100%;
-  padding: 1rem 1.8rem;
+  padding: 0.75rem 1.4rem;
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 1.05rem;
+  font-size: 0.95rem;
   color: var(--text-dark);
   background: linear-gradient(135deg, var(--accent-green), var(--accent-emerald));
   border: none;
@@ -2027,10 +2024,10 @@ body {
 
 .modal-secondary-btn {
   width: 100%;
-  padding: 0.95rem 1.8rem;
+  padding: 0.65rem 1.4rem;
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 0.88rem;
   color: #a7f3d0;
   background: rgba(3, 14, 28, 0.75);
   border: 1px solid var(--border-subtle);
@@ -2041,7 +2038,7 @@ body {
   justify-content: center;
   cursor: pointer;
   transition: var(--transition-smooth);
-  margin-top: 0.75rem;
+  margin-top: 0.5rem;
 }
 
 .modal-secondary-btn:hover {
@@ -3496,10 +3493,38 @@ body {
 }
 
 /* ============================================================
+   FILE NAMING RULE NOTICE
+   ============================================================ */
+.file-naming-rule {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 10px;
+  margin-bottom: 2px;
+  padding: 9px 14px;
+  border-radius: 8px;
+  background: rgba(0, 230, 118, 0.06);
+  border: 1px solid rgba(0, 230, 118, 0.18);
+  font-size: 0.82rem;
+  color: var(--accent-mint, #b2ffd6);
+  line-height: 1.55;
+}
+.file-naming-rule svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--accent-green, #00e676);
+}
+.file-naming-rule em {
+  color: var(--accent-green, #00e676);
+  font-style: italic;
+}
+
+/* ============================================================
    CONCEPT PAPER TEMPLATE DOWNLOAD LINK
    ============================================================ */
 .template-download-box {
-  margin-top: 10px;
+  margin-top: 4px;
+  margin-bottom: 12px;
   display: flex;
   align-items: center;
 }

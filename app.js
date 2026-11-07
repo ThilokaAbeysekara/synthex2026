@@ -612,21 +612,86 @@ function initFormInteractions() {
   const fileRemoveBtn = document.getElementById("file-remove-btn");
   const fileUploadLabel = document.querySelector(".file-upload-label");
 
-  if (fileInput && fileWrapper) {
-    fileInput.addEventListener("change", () => {
-      if (fileInput.files && fileInput.files[0]) {
-        const file = fileInput.files[0];
-        if (fileSelectedName) fileSelectedName.textContent = file.name;
-        if (fileSelectedInfo) fileSelectedInfo.style.display = "flex";
-        if (fileUploadLabel) fileUploadLabel.style.display = "none";
-        fileWrapper.classList.add("has-file");
-        const group = document.getElementById("group-conceptPaper");
-        if (group) {
-          group.classList.remove("has-error");
-          group.classList.add("has-success");
+  
+if (fileInput && fileWrapper) {
+  fileInput.addEventListener("change", () => {
+    if (fileInput.files && fileInput.files[0]) {
+      const file = fileInput.files[0];
+
+      // Allow PDF files only
+      const isPDF =
+        file.name.toLowerCase().endsWith(".pdf") &&
+        (!file.type || file.type === "application/pdf");
+
+      if (!isPDF) {
+        fileInput.value = "";
+
+        if (fileSelectedInfo) {
+          fileSelectedInfo.style.display = "none";
         }
+
+        if (fileUploadLabel) {
+          fileUploadLabel.style.display = "flex";
+        }
+
+        fileWrapper.classList.remove("has-file");
+
+        showAlert(
+          "Only PDF files are allowed. Please upload a PDF document.",
+          "error"
+        );
+
+        return;
       }
-    });
+
+      // Maximum 10 MB
+      if (file.size > CONFIG.maxFileSize) {
+        fileInput.value = "";
+
+        if (fileSelectedInfo) {
+          fileSelectedInfo.style.display = "none";
+        }
+
+        if (fileUploadLabel) {
+          fileUploadLabel.style.display = "flex";
+        }
+
+        fileWrapper.classList.remove("has-file");
+
+        showAlert(
+          "Your PDF must not exceed 10 MB.",
+          "error"
+        );
+
+        return;
+      }
+
+      // Valid PDF selected
+      showAlert("", "");
+
+      if (fileSelectedName) {
+        fileSelectedName.textContent = file.name;
+      }
+
+      if (fileSelectedInfo) {
+        fileSelectedInfo.style.display = "flex";
+      }
+
+      if (fileUploadLabel) {
+        fileUploadLabel.style.display = "none";
+      }
+
+      fileWrapper.classList.add("has-file");
+
+      const group = document.getElementById("group-conceptPaper");
+
+      if (group) {
+        group.classList.remove("has-error");
+        group.classList.add("has-success");
+      }
+    }
+  });
+
 
     if (fileRemoveBtn) {
       fileRemoveBtn.addEventListener("click", (e) => {
